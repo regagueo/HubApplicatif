@@ -119,6 +119,20 @@ export interface SoldeDepartementDto {
   annee: number
 }
 
+export interface JourFerieDto {
+  id: number
+  date: string
+  libelle: string
+  source: string
+  annee: number
+}
+
+export interface CalculJoursOuvresDto {
+  joursOuvres: number
+  weekEndsExclus: number
+  joursFeriesExclus: number
+}
+
 export async function getHistoriqueSolde(employeeId: number, annee?: number): Promise<HistoriqueSoldeDto[]> {
   const q = annee != null ? `?annee=${annee}` : ''
   const res = await apiFetch(`${BASE}/${employeeId}/historique-solde${q}`)
@@ -145,5 +159,82 @@ export async function getSoldesParDepartement(annee?: number): Promise<SoldeDepa
   const q = annee != null ? `?annee=${annee}` : ''
   const res = await apiFetch(`${BASE}/rh/soldes-departement${q}`)
   if (!res.ok) throw new Error('Erreur chargement soldes par département')
+  return res.json()
+}
+
+export async function getJoursFeries(annee?: number): Promise<JourFerieDto[]> {
+  const q = annee != null ? `?annee=${annee}` : ''
+  const res = await apiFetch(`${BASE}/jours-feries${q}`)
+  if (!res.ok) throw new Error('Erreur chargement jours fériés')
+  return res.json()
+}
+
+export async function addJourFerie(date: string, libelle: string): Promise<JourFerieDto> {
+  const params = new URLSearchParams()
+  params.set('date', date)
+  params.set('libelle', libelle)
+  const res = await apiFetch(`${BASE}/jours-feries?${params.toString()}`, { method: 'POST' })
+  if (!res.ok) throw new Error('Erreur ajout jour férié')
+  return res.json()
+}
+
+export async function deleteJourFerie(id: number): Promise<void> {
+  const res = await apiFetch(`${BASE}/jours-feries/${id}`, { method: 'DELETE' })
+  if (!res.ok) throw new Error('Erreur suppression jour férié')
+}
+
+export async function syncJoursFeries(annee: number): Promise<JourFerieDto[]> {
+  const res = await apiFetch(`${BASE}/jours-feries/sync?annee=${annee}`, { method: 'POST' })
+  if (!res.ok) throw new Error('Erreur synchronisation Nager')
+  return res.json()
+}
+
+export async function calculJoursOuvres(dateDebut: string, dateFin: string, periode: string): Promise<CalculJoursOuvresDto> {
+  const params = new URLSearchParams()
+  params.set('dateDebut', dateDebut)
+  params.set('dateFin', dateFin)
+  params.set('periode', periode)
+  const res = await apiFetch(`${BASE}/calcul-jours-ouvres?${params.toString()}`)
+  if (!res.ok) throw new Error('Erreur calcul jours ouvrés')
+  return res.json()
+}
+
+export async function getDemandesEnAttente(etape: 'MANAGER' | 'RH' = 'MANAGER'): Promise<DemandeCongesDto[]> {
+  const res = await apiFetch(`${BASE}/demandes/en-attente?etape=${etape}`)
+  if (!res.ok) throw new Error('Erreur chargement des demandes à valider')
+  return res.json()
+}
+
+export async function getDemandesValidation(etape: 'MANAGER' | 'RH' = 'MANAGER'): Promise<DemandeCongesDto[]> {
+  const res = await apiFetch(`${BASE}/demandes/validation?etape=${etape}`)
+  if (!res.ok) throw new Error('Erreur chargement historique validation')
+  return res.json()
+}
+
+export async function validerDemandeParManager(demandeId: number, validateurNom?: string): Promise<DemandeCongesDto> {
+  const q = validateurNom ? `?validateurNom=${encodeURIComponent(validateurNom)}` : ''
+  const res = await apiFetch(`${BASE}/demandes/${demandeId}/valider-manager${q}`, { method: 'PUT' })
+  if (!res.ok) throw new Error('Erreur validation manager')
+  return res.json()
+}
+
+export async function refuserDemandeParManager(demandeId: number, validateurNom?: string): Promise<DemandeCongesDto> {
+  const q = validateurNom ? `?validateurNom=${encodeURIComponent(validateurNom)}` : ''
+  const res = await apiFetch(`${BASE}/demandes/${demandeId}/refuser-manager${q}`, { method: 'PUT' })
+  if (!res.ok) throw new Error('Erreur refus manager')
+  return res.json()
+}
+
+export async function validerDemandeParRh(demandeId: number, validateurNom?: string): Promise<DemandeCongesDto> {
+  const q = validateurNom ? `?validateurNom=${encodeURIComponent(validateurNom)}` : ''
+  const res = await apiFetch(`${BASE}/demandes/${demandeId}/valider-rh${q}`, { method: 'PUT' })
+  if (!res.ok) throw new Error('Erreur validation RH')
+  return res.json()
+}
+
+export async function refuserDemandeParRh(demandeId: number, validateurNom?: string): Promise<DemandeCongesDto> {
+  const q = validateurNom ? `?validateurNom=${encodeURIComponent(validateurNom)}` : ''
+  const res = await apiFetch(`${BASE}/demandes/${demandeId}/refuser-rh${q}`, { method: 'PUT' })
+  if (!res.ok) throw new Error('Erreur refus RH')
   return res.json()
 }

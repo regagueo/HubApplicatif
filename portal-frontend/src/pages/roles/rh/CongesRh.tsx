@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../../context/AuthContext'
-import { Settings, Users, RefreshCw, Save } from 'lucide-react'
+import { Settings, Users, RefreshCw, Save, CalendarPlus, Trash2 } from 'lucide-react'
 import * as api from '../../../api/conges'
 import { apiFetch } from '../../../api/client'
-import type { ParametresCongesDto, SoldeDepartementDto } from '../../../api/conges'
+import type { ParametresCongesDto, SoldeDepartementDto, JourFerieDto } from '../../../api/conges'
 import './CongesRh.css'
 
 interface UserInfo {
@@ -32,6 +32,13 @@ export default function CongesRh() {
   const [anneeSoldes, setAnneeSoldes] = useState(new Date().getFullYear())
   const [loadingSoldes, setLoadingSoldes] = useState(false)
   const [filterNom, setFilterNom] = useState('')
+  const [anneeJoursFeries, setAnneeJoursFeries] = useState(new Date().getFullYear())
+  const [joursFeries, setJoursFeries] = useState<JourFerieDto[]>([])
+  const [loadingJoursFeries, setLoadingJoursFeries] = useState(false)
+  const [syncingJoursFeries, setSyncingJoursFeries] = useState(false)
+  const [newJourFerieDate, setNewJourFerieDate] = useState('')
+  const [newJourFerieNom, setNewJourFerieNom] = useState('')
+  const [msgJoursFeries, setMsgJoursFeries] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
 
   const loadParametres = useCallback(async () => {
     try {
@@ -70,9 +77,23 @@ export default function CongesRh() {
     }
   }, [anneeSoldes])
 
+  const loadJoursFeries = useCallback(async () => {
+    setLoadingJoursFeries(true)
+    try {
+      const data = await api.getJoursFeries(anneeJoursFeries)
+      setJoursFeries(data)
+    } catch {
+      setJoursFeries([])
+      setMsgJoursFeries({ type: 'err', text: 'Erreur chargement jours fériés' })
+    } finally {
+      setLoadingJoursFeries(false)
+    }
+  }, [anneeJoursFeries])
+
   useEffect(() => { loadParametres() }, [loadParametres])
   useEffect(() => { loadUsers() }, [loadUsers])
   useEffect(() => { loadSoldes() }, [loadSoldes])
+  useEffect(() => { loadJoursFeries() }, [loadJoursFeries])
 
   const handleSaveParametres = async () => {
     const val = parseFloat(editVal)
@@ -104,6 +125,50 @@ export default function CongesRh() {
         return nom.toLowerCase().includes(filterNom.toLowerCase())
       })
     : employeeIds
+
+  const handleSyncJoursFeries = async () => {
+    setSyncingJoursFeries(true)
+    setMsgJoursFeries(null)
+    try {
+      await api.syncJoursFeries(anneeJoursFeries)
+      await loadJoursFeries()
+      setMsgJoursFeries({ type: 'ok', text: 'Synchronisation Nager effectuée avec succès' })
+    } catch (err) {
+      setMsgJoursFeries({ type: 'err', text: err instanceof Error ? err.message : 'Erreur synchronisation' })
+    } finally {
+      setSyncingJoursFeries(false)
+    }
+  }
+
+  const handleAddJourFerie = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newJourFerieDate || !newJourFerieNom.trim()) {
+      setMsgJoursFeries({ type: 'err', text: 'Veuillez renseigner la date et le nom.' })
+      return
+    }
+    setMsgJoursFeries(null)
+    try {
+      await api.addJourFerie(newJourFerieDate, newJourFerieNom.trim())
+      setNewJourFerieDate('')
+      setNewJourFerieNom('')
+      await loadJoursFeries()
+      setMsgJoursFeries({ type: 'ok', text: 'Jour férié ajouté avec succès' })
+    } catch (err) {
+      setMsgJoursFeries({ type: 'err', text: err instanceof Error ? err.message : 'Erreur ajout jour férié' })
+    }
+  }
+
+  const handleDeleteJourFerie = async (id: number) => {
+    if (!window.confirm('Supprimer ce jour férié ?')) return
+    setMsgJoursFeries(null)
+    try {
+      await api.deleteJourFerie(id)
+      await loadJoursFeries()
+      setMsgJoursFeries({ type: 'ok', text: 'Jour férié supprimé avec succès' })
+    } catch (err) {
+      setMsgJoursFeries({ type: 'err', text: err instanceof Error ? err.message : 'Erreur suppression jour férié' })
+    }
+  }
 
   return (
     <div className="conges-rh-page">
@@ -215,6 +280,88 @@ export default function CongesRh() {
                     </tr>
                   ))
                 })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <section className="conges-rh-section">
+        <h2 className="conges-rh-section-title">
+          <CalendarPlus size={20} />
+          Jours fériés (Maroc)
+        </h2>
+        <div className="conges-rh-feries-controls">
+          <div className="conges-rh-field">
+            <label>Année</label>
+            <select value={anneeJoursFeries} onChange={(e) => setAnneeJoursFeries(Number(e.target.value))}>
+              {ANNEES.map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </div>
+          <button className="conges-rh-btn-refresh" onClick={handleSyncJoursFeries} disabled={syncingJoursFeries}>
+            <RefreshCw size={16} />
+            {syncingJoursFeries ? 'Synchronisation...' : 'Synchroniser Nager'}
+          </button>
+        </div>
+
+        <form className="conges-rh-feries-add-form" onSubmit={handleAddJourFerie}>
+          <div className="conges-rh-field">
+            <label>Date</label>
+            <input type="date" value={newJourFerieDate} onChange={(e) => setNewJourFerieDate(e.target.value)} />
+          </div>
+          <div className="conges-rh-field">
+            <label>Nom</label>
+            <input
+              type="text"
+              placeholder="Nom du jour férié"
+              value={newJourFerieNom}
+              onChange={(e) => setNewJourFerieNom(e.target.value)}
+            />
+          </div>
+          <button className="conges-rh-btn-save" type="submit">Ajouter</button>
+        </form>
+
+        {msgJoursFeries && (
+          <p className={`conges-rh-msg ${msgJoursFeries.type === 'ok' ? 'conges-rh-msg-ok' : 'conges-rh-msg-err'}`}>
+            {msgJoursFeries.text}
+          </p>
+        )}
+
+        {loadingJoursFeries ? (
+          <p className="conges-rh-loading">Chargement...</p>
+        ) : joursFeries.length === 0 ? (
+          <p className="conges-rh-empty">Aucun jour férié trouvé pour cette année.</p>
+        ) : (
+          <div className="conges-rh-table-wrap">
+            <table className="conges-rh-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Nom</th>
+                  <th>Source</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {joursFeries.map((jf) => (
+                  <tr key={jf.id}>
+                    <td>{new Date(jf.date).toLocaleDateString('fr-FR')}</td>
+                    <td>{jf.libelle}</td>
+                    <td>{jf.source}</td>
+                    <td>
+                      <button
+                        className="conges-rh-btn-delete"
+                        type="button"
+                        onClick={() => handleDeleteJourFerie(jf.id)}
+                      >
+                        <Trash2 size={16} />
+                        Supprimer
+                      </button>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

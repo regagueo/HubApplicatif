@@ -16,14 +16,20 @@ import java.util.List;
 public class DemandeFraisDto {
     private Long id;
     private Long employeeId;
+    private Long dossierId;
     private String reference;
     private BigDecimal montant;
     private String categorie;
     private String categorieLabel;
+    private String modeTransport;
+    private BigDecimal kilometres;
+    private String ville;
+    private Integer anneesExperience;
     private String description;
     private String statut;
     private String statutLabel;
     private String dateSoumission;
+    private String dateSoumissionIso;
     private String dateRemboursement; // "-" si non remboursé
     private String phaseActuelle;     // pour affichage workflow
     private String managerNom;

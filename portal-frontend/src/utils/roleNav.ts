@@ -1,7 +1,7 @@
 /**
  * Configuration des menus par rôle métier.
  * EMPLOYEE → Congés, Notes de frais, Chat, Paramètres
- * MANAGER → mêmes + Validation équipe
+ * MANAGER → mêmes (validation dans les pages métier)
  * RH → mêmes + Ressources humaines + Indicateurs RH
  * ADMIN → Paramètres & Sécurité uniquement
  * DG → Tableau de bord global + Indicateurs consolidés
@@ -14,7 +14,6 @@ import {
   Receipt,
   MessageCircle,
   Settings,
-  Users,
   Building2,
   BarChart3,
   Shield
@@ -32,7 +31,6 @@ export const ALL_NAV_ITEMS: NavItem[] = [
   { path: '/chat', label: 'Chat collaboratif', icon: MessageCircle, roles: ['EMPLOYEE', 'MANAGER', 'RH'] },
   { path: '/conges', label: 'Congés & Absences', icon: CalendarOff, roles: ['EMPLOYEE', 'MANAGER', 'RH'] },
   { path: '/notes-frais', label: 'Notes de frais', icon: Receipt, roles: ['EMPLOYEE', 'MANAGER', 'RH'] },
-  { path: '/validation-equipe', label: 'Validation équipe', icon: Users, roles: ['MANAGER', 'RH'] },
   { path: '/rh', label: 'Ressources humaines', icon: Building2, roles: ['RH'] },
   { path: '/indicateurs-internes', label: 'Indicateurs internes', icon: BarChart3, roles: ['EMPLOYEE', 'MANAGER', 'RH'] },
   { path: '/indicateurs-rh', label: 'Indicateurs RH', icon: BarChart3, roles: ['RH'] },

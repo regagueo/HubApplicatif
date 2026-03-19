@@ -7,6 +7,7 @@ import NotesFrais from './pages/roles/employee/NotesFrais'
 import Chat from './pages/Chat'
 import Settings from './pages/Settings'
 import PlaceholderPage from './pages/roles/PlaceholderPage'
+import CongesRh from './pages/roles/rh/CongesRh'
 import Layout from './components/Layout'
 
 function normalizeRole(r: string): string {
@@ -97,30 +98,12 @@ function App() {
           }
         />
         <Route
-          path="/validation-equipe"
-          element={
-            <ProtectedRoute>
-              <RoleRoute roles={['MANAGER', 'RH']}>
-                <ProtectedLayout>
-                  <PlaceholderPage
-                    title="Validation équipe"
-                    description="Validation des demandes de congés et notes de frais de votre équipe. À venir."
-                  />
-                </ProtectedLayout>
-              </RoleRoute>
-            </ProtectedRoute>
-          }
-        />
-        <Route
           path="/rh"
           element={
             <ProtectedRoute>
               <RoleRoute roles={['RH']}>
                 <ProtectedLayout>
-                  <PlaceholderPage
-                    title="Ressources humaines"
-                    description="Gestion des collaborateurs, annuaire, suivi bien-être. À venir."
-                  />
+                  <CongesRh />
                 </ProtectedLayout>
               </RoleRoute>
             </ProtectedRoute>

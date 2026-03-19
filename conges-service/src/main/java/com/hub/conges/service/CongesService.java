@@ -322,6 +322,28 @@ public class CongesService {
         return demandeRepository.findByStatutInOrderByDateSoumissionDesc(statuts).stream().map(this::toDto).collect(Collectors.toList());
     }
 
+    public List<DemandeCongesDto> getDemandesValidation(String etape) {
+        if (!hasRole("MANAGER") && !hasRole("RH") && !hasRole("ADMIN")) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Accès refusé");
+        }
+        List<DemandeConges.StatutDemande> statuts = List.of(
+                DemandeConges.StatutDemande.EN_ATTENTE_MANAGER,
+                DemandeConges.StatutDemande.EN_ATTENTE_RH,
+                DemandeConges.StatutDemande.VALIDE,
+                DemandeConges.StatutDemande.REFUSE
+        );
+        List<DemandeCongesDto> all = demandeRepository.findByStatutInOrderByDateSoumissionDesc(statuts)
+                .stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+        if ("RH".equalsIgnoreCase(etape)) {
+            return all.stream()
+                    .filter(d -> !"EN_ATTENTE_MANAGER".equals(d.getStatut()))
+                    .collect(Collectors.toList());
+        }
+        return all;
+    }
+
     public List<HistoriqueSoldeDto> getHistoriqueSolde(Long employeeId, Integer anneeParam) {
         CongesUserPrincipal user = getCurrentUser();
         if (!user.getUserId().equals(employeeId) && !hasRole("MANAGER") && !hasRole("RH") && !hasRole("ADMIN")) {

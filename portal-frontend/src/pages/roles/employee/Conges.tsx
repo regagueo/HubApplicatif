@@ -8,7 +8,13 @@ import {
   ChevronRight
 } from 'lucide-react'
 import * as api from '../../../api/conges'
-import type { SoldeCongesDto, DemandeCongesDto, CreateDemandeRequest, HistoriqueSoldeDto } from '../../../api/conges'
+import type {
+  SoldeCongesDto,
+  DemandeCongesDto,
+  CreateDemandeRequest,
+  HistoriqueSoldeDto,
+  CalculJoursOuvresDto
+} from '../../../api/conges'
 import './Conges.css'
 
 const MOTIFS = [
@@ -42,11 +48,11 @@ export default function Conges() {
   const [error, setError] = useState<string | null>(null)
   const [annee, setAnnee] = useState(new Date().getFullYear())
   const [statutFilter, setStatutFilter] = useState('TOUS')
-  const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
-  const [suiviDemandeId, setSuiviDemandeId] = useState<number | null>(null)
   const [historiqueSolde, setHistoriqueSolde] = useState<HistoriqueSoldeDto[]>([])
   const [loadingHistSolde, setLoadingHistSolde] = useState(false)
+  const [calculPreview, setCalculPreview] = useState<CalculJoursOuvresDto | null>(null)
+  const [calculLoading, setCalculLoading] = useState(false)
   const [form, setForm] = useState<CreateDemandeRequest>({
     dateDebut: '',
     dateFin: '',
@@ -56,6 +62,14 @@ export default function Conges() {
   })
 
   const employeeId = user?.id ?? 0
+  const roles = user?.roles ?? []
+  const isManager = roles.some((r) => r === 'MANAGER' || r === 'ROLE_MANAGER')
+  const isRh = roles.some((r) => r === 'RH' || r === 'ROLE_RH' || r === 'ADMIN' || r === 'ROLE_ADMIN')
+  const canManageDemandes = isManager || isRh
+  const [activeTab, setActiveTab] = useState<'mes-demandes' | 'a-valider'>('mes-demandes')
+  const [demandesAValider, setDemandesAValider] = useState<DemandeCongesDto[]>([])
+  const [loadingDemandesAValider, setLoadingDemandesAValider] = useState(false)
+  const [actionDemandeId, setActionDemandeId] = useState<number | null>(null)
 
   useEffect(() => {
     if (!employeeId) {
@@ -81,6 +95,42 @@ export default function Conges() {
       .finally(() => setLoadingHistSolde(false))
   }, [employeeId, annee])
 
+  useEffect(() => {
+    const { dateDebut, dateFin, periode } = form
+    if (!dateDebut || !dateFin || !periode || dateDebut > dateFin) {
+      setCalculPreview(null)
+      setCalculLoading(false)
+      return
+    }
+
+    let active = true
+    setCalculLoading(true)
+    api.calculJoursOuvres(dateDebut, dateFin, periode)
+      .then((data) => {
+        if (!active) return
+        setCalculPreview(data)
+      })
+      .catch(() => {
+        if (!active) return
+        setCalculPreview(null)
+      })
+      .finally(() => {
+        if (!active) return
+        setCalculLoading(false)
+      })
+
+    return () => { active = false }
+  }, [form.dateDebut, form.dateFin, form.periode])
+
+  useEffect(() => {
+    if (!canManageDemandes || activeTab !== 'a-valider') return
+    setLoadingDemandesAValider(true)
+    api.getDemandesValidation(isRh ? 'RH' : 'MANAGER')
+      .then(setDemandesAValider)
+      .catch((e) => setError(e instanceof Error ? e.message : 'Erreur chargement demandes à valider'))
+      .finally(() => setLoadingDemandesAValider(false))
+  }, [activeTab, canManageDemandes, isRh])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!employeeId || !form.dateDebut || !form.dateFin) return
@@ -92,7 +142,6 @@ export default function Conges() {
         await api.createDemande(employeeId, form)
       }
       setForm({ dateDebut: '', dateFin: '', motif: 'CONGES_ANNUELS', periode: 'JOURNEE_COMPLETE', commentaire: '' })
-      setShowForm(false)
       const [s, d] = await Promise.all([api.getSoldes(employeeId), api.getDemandes(employeeId, annee, statutFilter === 'TOUS' ? undefined : statutFilter)])
       setSoldes(s)
       setDemandes(d)
@@ -111,10 +160,52 @@ export default function Conges() {
     }
   }
 
+  const refreshDemandesAValider = async () => {
+    if (!canManageDemandes) return
+    setDemandesAValider(await api.getDemandesValidation(isRh ? 'RH' : 'MANAGER'))
+  }
+
+  const handleDecisionManager = async (demandeId: number, action: 'valider' | 'refuser') => {
+    try {
+      setActionDemandeId(demandeId)
+      const validateurNom = user?.firstName && user?.lastName
+        ? `${user.firstName} ${user.lastName}`
+        : user?.username
+      if (action === 'valider') {
+        await api.validerDemandeParManager(demandeId, validateurNom)
+      } else {
+        await api.refuserDemandeParManager(demandeId, validateurNom)
+      }
+      await refreshDemandesAValider()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur')
+    } finally {
+      setActionDemandeId(null)
+    }
+  }
+
+  const handleDecisionRh = async (demandeId: number, action: 'valider' | 'refuser') => {
+    try {
+      setActionDemandeId(demandeId)
+      const validateurNom = user?.firstName && user?.lastName
+        ? `${user.firstName} ${user.lastName}`
+        : user?.username
+      if (action === 'valider') {
+        await api.validerDemandeParRh(demandeId, validateurNom)
+      } else {
+        await api.refuserDemandeParRh(demandeId, validateurNom)
+      }
+      await refreshDemandesAValider()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur')
+    } finally {
+      setActionDemandeId(null)
+    }
+  }
+
   const soldeByType = (type: string) => soldes.find((s) => s.type === type)
   const dureeLabel = (d: DemandeCongesDto) => (d.dureeJours === 0.5 ? '0.5 jour' : d.dureeJours === 1 ? '1 jour' : `${d.dureeJours} jours`)
   const canEdit = (d: DemandeCongesDto) => d.statut === 'EN_ATTENTE_MANAGER' || d.statut === 'SOUMMIS'
-  const selectedDemande = suiviDemandeId ? demandes.find((d) => d.id === suiviDemandeId) : null
 
   if (loading && !soldes.length) {
     return (
@@ -142,6 +233,121 @@ export default function Conges() {
         </div>
       )}
 
+      {canManageDemandes && (
+        <div className="conges-tabs">
+          <button
+            type="button"
+            className={`conges-tab-btn ${activeTab === 'mes-demandes' ? 'active' : ''}`}
+            onClick={() => setActiveTab('mes-demandes')}
+          >
+            Mes demandes
+          </button>
+          <button
+            type="button"
+            className={`conges-tab-btn ${activeTab === 'a-valider' ? 'active' : ''}`}
+            onClick={() => setActiveTab('a-valider')}
+          >
+            Demandes à valider
+          </button>
+        </div>
+      )}
+
+      {activeTab === 'a-valider' ? (
+        <section className="conges-historique">
+          <h2 className="conges-historique-title">
+            <Clock size={20} />
+            {isRh ? 'Demandes à traiter (RH)' : 'Demandes à traiter (Manager)'}
+          </h2>
+          {loadingDemandesAValider ? (
+            <p className="conges-empty">Chargement...</p>
+          ) : demandesAValider.length === 0 ? (
+            <p className="conges-empty">Aucune demande en attente manager.</p>
+          ) : (
+            <div className="conges-table-wrap">
+              <table className="conges-table">
+                <thead>
+                  <tr>
+                    <th>Employé ID</th>
+                    <th>Dates</th>
+                    <th>Motif</th>
+                    <th>Durée</th>
+                    <th>Statut</th>
+                    <th>Historique</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {demandesAValider.map((d) => (
+                    <tr key={d.id}>
+                      <td>{d.employeeId}</td>
+                      <td>{d.dateDebut === d.dateFin ? d.dateDebut : `${d.dateDebut} - ${d.dateFin}`}</td>
+                      <td>{d.motif}</td>
+                      <td>{dureeLabel(d)}</td>
+                      <td>
+                        <span className={`conges-statut conges-statut-${d.statut.toLowerCase()}`}>
+                          {d.statutLabel}
+                        </span>
+                      </td>
+                      <td>
+                        {(d.suivi ?? [])
+                          .filter((s) => s.statut !== 'EN_ATTENTE')
+                          .map((s) => `${s.label}: ${s.statut} (${s.date})`)
+                          .join(' | ') || '—'}
+                      </td>
+                      <td>
+                        {isManager && d.statut === 'EN_ATTENTE_MANAGER' && (
+                          <>
+                            <button
+                              type="button"
+                              className="conges-link"
+                              disabled={actionDemandeId === d.id}
+                              onClick={() => handleDecisionManager(d.id, 'valider')}
+                            >
+                              Valider
+                            </button>
+                            <button
+                              type="button"
+                              className="conges-link conges-link-danger"
+                              disabled={actionDemandeId === d.id}
+                              onClick={() => handleDecisionManager(d.id, 'refuser')}
+                            >
+                              Refuser
+                            </button>
+                          </>
+                        )}
+                        {isRh && d.statut === 'EN_ATTENTE_RH' && (
+                          <>
+                            <button
+                              type="button"
+                              className="conges-link"
+                              disabled={actionDemandeId === d.id}
+                              onClick={() => handleDecisionRh(d.id, 'valider')}
+                            >
+                              Valider RH
+                            </button>
+                            <button
+                              type="button"
+                              className="conges-link conges-link-danger"
+                              disabled={actionDemandeId === d.id}
+                              onClick={() => handleDecisionRh(d.id, 'refuser')}
+                            >
+                              Refuser RH
+                            </button>
+                          </>
+                        )}
+                        {((isManager && d.statut !== 'EN_ATTENTE_MANAGER') || (isRh && d.statut !== 'EN_ATTENTE_RH')) && (
+                          <span className="conges-link">Traité</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      ) : (
+      <>
       <section className="conges-soldes">
         <div className="conges-solde-card">
           <Calendar size={20} className="conges-solde-icon" />
@@ -236,8 +442,31 @@ export default function Conges() {
                 rows={3}
               />
             </div>
+            <div className="conges-calcul-preview">
+              <h3>Transparence du calcul</h3>
+              {calculLoading ? (
+                <p className="conges-calcul-preview-loading">Calcul en cours...</p>
+              ) : calculPreview ? (
+                <div className="conges-calcul-preview-grid">
+                  <div className="conges-calcul-preview-item">
+                    <span className="conges-calcul-preview-label">Jours ouvrés calculés</span>
+                    <strong>{calculPreview.joursOuvres}</strong>
+                  </div>
+                  <div className="conges-calcul-preview-item">
+                    <span className="conges-calcul-preview-label">Week-ends exclus</span>
+                    <strong>{calculPreview.weekEndsExclus}</strong>
+                  </div>
+                  <div className="conges-calcul-preview-item">
+                    <span className="conges-calcul-preview-label">Jours fériés exclus</span>
+                    <strong>{calculPreview.joursFeriesExclus}</strong>
+                  </div>
+                </div>
+              ) : (
+                <p className="conges-calcul-preview-empty">Sélectionnez une période valide pour voir le détail du calcul.</p>
+              )}
+            </div>
             <div className="conges-form-actions">
-              <button type="button" className="conges-btn-secondary" onClick={() => { setShowForm(false); setEditingId(null); setForm({ dateDebut: '', dateFin: '', motif: 'CONGES_ANNUELS', periode: 'JOURNEE_COMPLETE', commentaire: '' }) }}>
+              <button type="button" className="conges-btn-secondary" onClick={() => { setEditingId(null); setForm({ dateDebut: '', dateFin: '', motif: 'CONGES_ANNUELS', periode: 'JOURNEE_COMPLETE', commentaire: '' }) }}>
                 Annuler
               </button>
               <button type="submit" className="conges-btn-primary">
@@ -318,10 +547,10 @@ export default function Conges() {
                   </td>
                   <td>{d.validateurNom}</td>
                   <td>
-                    <button type="button" className="conges-link" onClick={() => setSuiviDemandeId(d.id)}>Détails</button>
+                    <button type="button" className="conges-link" onClick={() => setError('Affichage des détails indisponible pour le moment.')}>Détails</button>
                     {canEdit(d) && (
                       <>
-                        <button type="button" className="conges-link" onClick={() => { setEditingId(d.id); setForm({ dateDebut: d.dateDebut.replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$3-$2-$1'), dateFin: d.dateFin.replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$3-$2-$1'), motif: d.motifCode, periode: d.periode, commentaire: d.commentaire ?? '' }); setShowForm(true) }}>Modifier</button>
+                        <button type="button" className="conges-link" onClick={() => { setEditingId(d.id); setForm({ dateDebut: d.dateDebut.replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$3-$2-$1'), dateFin: d.dateFin.replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$3-$2-$1'), motif: d.motifCode, periode: d.periode, commentaire: d.commentaire ?? '' }) }}>Modifier</button>
                         <button type="button" className="conges-link conges-link-danger" onClick={() => handleAnnulerDemande(d.id)}>Annuler</button>
                       </>
                     )}
@@ -387,6 +616,8 @@ export default function Conges() {
         </div>
         <p className="conges-footer-copy">© 2026 CBI Maroc - CBI Connect Employee Portal. Tous droits réservés.</p>
       </footer>
+      </>
+      )}
     </div>
   )
 }

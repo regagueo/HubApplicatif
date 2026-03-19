@@ -75,6 +75,12 @@ public class CongesController {
     }
 
     @PreAuthorize("hasRole('MANAGER') or hasRole('RH') or hasRole('ADMIN')")
+    @GetMapping("/demandes/validation")
+    public ResponseEntity<List<DemandeCongesDto>> getDemandesValidation(@RequestParam(defaultValue = "MANAGER") String etape) {
+        return ResponseEntity.ok(congesService.getDemandesValidation(etape));
+    }
+
+    @PreAuthorize("hasRole('MANAGER') or hasRole('RH') or hasRole('ADMIN')")
     @PutMapping("/demandes/{demandeId}/valider-manager")
     public ResponseEntity<DemandeCongesDto> validerParManager(
             @PathVariable Long demandeId,

@@ -23,12 +23,27 @@ public class DemandeFrais {
     @Column(nullable = false)
     private Long employeeId;
 
+    @Column
+    private Long dossierId;
+
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal montant;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
     private CategorieFrais categorie;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 32)
+    private ModeTransport modeTransport;
+
+    @Column(precision = 10, scale = 2)
+    private BigDecimal kilometres;
+
+    @Column(length = 128)
+    private String ville;
+
+    private Integer anneesExperience;
 
     @Column(nullable = false, length = 1024)
     private String description;
@@ -50,10 +65,24 @@ public class DemandeFrais {
     @Column(length = 128)
     private String managerNom;
 
+    private LocalDateTime managerDecisionDate;
+
+    @Column(length = 128)
+    private String rhNom;
+
+    private LocalDateTime rhDecisionDate;
+
     private LocalDate dateRemboursement;
 
     public enum CategorieFrais {
         TRANSPORT, REPAS, HEBERGEMENT, FOURNITURES, AUTRE
+    }
+
+    public enum ModeTransport {
+        VOITURE_PERSONNELLE,
+        TRAIN_BUS_AVION,
+        TAXI_COVOITURAGE,
+        PEAGE_CARBURANT
     }
 
     public enum StatutDemande {

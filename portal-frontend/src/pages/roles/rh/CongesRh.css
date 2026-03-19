@@ -145,6 +145,44 @@
   background: var(--bg-card);
 }
 
+.conges-rh-feries-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.conges-rh-feries-add-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.conges-rh-feries-add-form .conges-rh-field {
+  min-width: 180px;
+  flex: 1;
+}
+
+.conges-rh-btn-delete {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.08);
+  color: var(--error);
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.conges-rh-btn-delete:hover {
+  background: rgba(239, 68, 68, 0.14);
+}
+
 .conges-rh-loading,
 .conges-rh-empty {
   color: var(--text-secondary);
@@ -194,6 +232,12 @@
 
 @media (max-width: 640px) {
   .conges-rh-soldes-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .conges-rh-feries-controls,
+  .conges-rh-feries-add-form {
     flex-direction: column;
     align-items: stretch;
   }
