@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: portail-config
+  namespace: portail-intranet
+data:
+  JWT_SECRET: "dGhpcyBpcyBhIDI1Ni1iaXQgc2VjcmV0IGtleSBmb3Igand0IHRlc3Rpbmc="
+  DB_HOST: "postgres"

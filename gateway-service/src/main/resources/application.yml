@@ -1,0 +1,151 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway-service
+  cloud:
+    gateway:
+      routes:
+        - id: auth-service
+          uri: http://localhost:8081
+          predicates:
+            - Path=/auth/**
+          filters:
+            - StripPrefix=0
+            - name: InMemoryRateLimiter
+              args:
+                requestsPerSecond: 10
+                burstCapacity: 20
+        - id: chat-websocket
+          uri: ws://localhost:8085
+          predicates:
+            - Path=/chat/ws/**
+          filters:
+            - StripPrefix=1
+        - id: chat-service
+          uri: http://localhost:8085
+          predicates:
+            - Path=/chat/**
+          filters:
+            - StripPrefix=0
+            - name: JwtAuth
+              args:
+                enabled: true
+        - id: employee-service
+          uri: http://localhost:8082
+          predicates:
+            - Path=/employee/**,/api/employee/**
+          filters:
+            - StripPrefix=0
+            - name: JwtAuth
+              args:
+                enabled: true
+        - id: manager-service
+          uri: http://localhost:8083
+          predicates:
+            - Path=/api/manager/**,/manager/**
+          filters:
+            - StripPrefix=0
+            - name: JwtAuth
+              args:
+                enabled: true
+        - id: rh-service
+          uri: http://localhost:8084
+          predicates:
+            - Path=/api/rh/**,/rh/**
+          filters:
+            - StripPrefix=0
+            - name: JwtAuth
+              args:
+                enabled: true
+        - id: dg-service
+          uri: http://localhost:8086
+          predicates:
+            - Path=/api/dg/**,/dg/**
+          filters:
+            - StripPrefix=0
+            - name: JwtAuth
+              args:
+                enabled: true
+        - id: admin-service
+          uri: http://localhost:8087
+          predicates:
+            - Path=/api/admin/**,/admin/**
+          filters:
+            - StripPrefix=0
+            - name: JwtAuth
+              args:
+                enabled: true
+        - id: chat-service-api
+          uri: http://localhost:8085
+          predicates:
+            - Path=/api/chat/**
+          filters:
+            - StripPrefix=1
+            - name: JwtAuth
+              args:
+                enabled: true
+        - id: file-service
+          uri: http://localhost:8088
+          predicates:
+            - Path=/api/files/**,/files/**
+          filters:
+            - StripPrefix=0
+            - name: JwtAuth
+              args:
+                enabled: true
+        - id: conges-service
+          uri: http://localhost:8089
+          predicates:
+            - Path=/api/conges/**,/conges/**
+          filters:
+            - StripPrefix=0
+            - name: JwtAuth
+              args:
+                enabled: true
+        - id: frais-service
+          uri: http://localhost:8090
+          predicates:
+            - Path=/api/frais/**,/frais/**
+          filters:
+            - StripPrefix=0
+            - name: JwtAuth
+              args:
+                enabled: true
+        - id: parametres-service
+          uri: http://localhost:8091
+          predicates:
+            - Path=/api/parametres/**,/parametres/**
+          filters:
+            - StripPrefix=0
+            - name: JwtAuth
+              args:
+                enabled: true
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+
+# JWT validation
+app:
+  jwt:
+    secret: ${JWT_SECRET:dGhpcyBpcyBhIDI1Ni1iaXQgc2VjcmV0IGtleSBmb3Igand0IHRlc3Rpbmc=}
+
+# Actuator & Prometheus
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics,gateway
+  endpoint:
+    gateway:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true

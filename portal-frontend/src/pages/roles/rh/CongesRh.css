@@ -1,0 +1,200 @@
+.conges-rh-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-bottom: 2rem;
+}
+
+.conges-rh-header {
+  margin-bottom: 2rem;
+}
+
+.conges-rh-header h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.conges-rh-subtitle {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.conges-rh-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.conges-rh-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 1.25rem;
+}
+
+.conges-rh-section-title svg {
+  color: var(--accent);
+}
+
+.conges-rh-params-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 400px;
+}
+
+.conges-rh-field label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 0.3rem;
+}
+
+.conges-rh-field input,
+.conges-rh-field select {
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.conges-rh-params-info {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.conges-rh-btn-save {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1.25rem;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  width: fit-content;
+}
+
+.conges-rh-btn-save:hover {
+  background: var(--accent-hover);
+}
+
+.conges-rh-btn-save:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.conges-rh-msg {
+  font-size: 0.85rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-md);
+  margin: 0;
+}
+
+.conges-rh-msg-ok {
+  color: var(--success);
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.conges-rh-msg-err {
+  color: var(--error);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.conges-rh-soldes-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+
+.conges-rh-soldes-controls .conges-rh-field {
+  min-width: 160px;
+}
+
+.conges-rh-btn-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1rem;
+  border: 1px solid var(--border);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  cursor: pointer;
+  margin-bottom: 0.1rem;
+}
+
+.conges-rh-btn-refresh:hover {
+  background: var(--bg-card);
+}
+
+.conges-rh-loading,
+.conges-rh-empty {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 1.5rem 0;
+}
+
+.conges-rh-table-wrap {
+  overflow-x: auto;
+}
+
+.conges-rh-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.conges-rh-table th,
+.conges-rh-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.conges-rh-table th {
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-primary);
+}
+
+.conges-rh-table tbody tr:hover {
+  background: var(--bg-primary);
+}
+
+.conges-rh-td-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  vertical-align: top;
+  border-right: 2px solid var(--border);
+}
+
+.conges-rh-val-zero {
+  color: var(--error);
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .conges-rh-soldes-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

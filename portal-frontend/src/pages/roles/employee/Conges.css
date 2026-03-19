@@ -1,0 +1,533 @@
+/* Congés & Absences - Maquette CBI Connect */
+.conges-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-bottom: 2rem;
+}
+
+.conges-loading {
+  color: var(--text-secondary);
+  padding: 2rem;
+}
+
+.conges-error {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--error);
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  margin-bottom: 1rem;
+}
+
+.conges-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.conges-header h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.conges-subtitle {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.conges-btn-politique {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.conges-btn-politique:hover {
+  background: var(--bg-primary);
+}
+
+/* Soldes - 4 cartes */
+.conges-soldes {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.conges-solde-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: box-shadow var(--transition);
+}
+
+.conges-solde-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.conges-solde-icon {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.conges-solde-label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.2rem;
+}
+
+.conges-solde-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.conges-solde-info {
+  color: var(--text-secondary);
+  margin-left: auto;
+  opacity: 0.7;
+}
+
+/* Grille formulaire + suivi */
+.conges-main-grid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 1.5rem;
+  align-items: start;
+  margin-bottom: 2rem;
+}
+
+.conges-form-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+}
+
+.conges-form-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.conges-form-title svg {
+  color: var(--accent);
+}
+
+.conges-form-desc {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 1.25rem;
+}
+
+.conges-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.conges-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.conges-form-group label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 0.35rem;
+}
+
+.conges-form-group input,
+.conges-form-group select,
+.conges-form-group textarea {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.conges-form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.conges-form-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.conges-btn-secondary {
+  padding: 0.6rem 1.25rem;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.conges-btn-secondary:hover {
+  background: var(--bg-primary);
+}
+
+.conges-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.6rem 1.25rem;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.conges-btn-primary:hover {
+  background: var(--accent-hover);
+}
+
+/* Suivi de validation */
+.conges-suivi-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  position: sticky;
+  top: 1rem;
+}
+
+.conges-suivi-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.15rem;
+}
+
+.conges-suivi-subtitle {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 1rem;
+}
+
+.conges-suivi-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.conges-step {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  position: relative;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.conges-step::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 24px;
+  bottom: -4px;
+  width: 2px;
+  background: var(--border);
+}
+
+.conges-step:last-child::before {
+  display: none;
+}
+
+.conges-step-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--border);
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+.conges-step-dot-dashed {
+  border: 2px dashed var(--border);
+  background: transparent;
+}
+
+.conges-step-done .conges-step-dot {
+  background: var(--success);
+}
+
+.conges-step-current .conges-step-dot {
+  background: var(--accent);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.conges-step-done {
+  color: var(--text-primary);
+}
+
+.conges-step-current {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.conges-step-date {
+  margin-left: auto;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.conges-info-box {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  padding: 1rem;
+  background: rgba(59, 130, 246, 0.08);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--accent);
+}
+
+.conges-info-box svg {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.conges-info-box p {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Historique */
+.conges-historique {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+}
+
+.conges-historique-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+}
+
+.conges-historique-title svg {
+  color: var(--accent);
+}
+
+.conges-filters {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.conges-filters select {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.conges-table-wrap {
+  overflow-x: auto;
+}
+
+.conges-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.conges-table th,
+.conges-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.conges-table th {
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-primary);
+}
+
+.conges-table tbody tr:hover {
+  background: var(--bg-primary);
+}
+
+.conges-statut {
+  font-weight: 500;
+}
+
+.conges-statut-valide {
+  color: var(--success);
+}
+
+.conges-statut-refuse {
+  color: var(--error);
+}
+
+.conges-statut-en_attente_manager,
+.conges-statut-en_attente_rh,
+.conges-statut-soummis {
+  color: var(--text-secondary);
+}
+
+.conges-link {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 0.875rem;
+  padding: 0 0.25rem;
+  margin-right: 0.5rem;
+}
+
+.conges-link:hover {
+  text-decoration: underline;
+}
+
+.conges-link-danger {
+  color: var(--error);
+}
+
+/* Historique acquisitions / consommations */
+.conges-hist-solde {
+  margin-top: 1.5rem;
+}
+
+.conges-empty {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 1.5rem 0;
+}
+
+.conges-mouvement-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-md);
+}
+
+.conges-mouvement-acq {
+  color: var(--success);
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.conges-mouvement-cons {
+  color: var(--error);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.conges-val-pos {
+  color: var(--success);
+  font-weight: 600;
+}
+
+.conges-val-neg {
+  color: var(--error);
+  font-weight: 600;
+}
+
+/* Footer */
+.conges-footer {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+.conges-footer-support strong {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+.conges-footer-support p {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.conges-footer-copy {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+@media (max-width: 1024px) {
+  .conges-soldes {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .conges-main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .conges-suivi-section {
+    position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .conges-soldes {
+    grid-template-columns: 1fr;
+  }
+
+  .conges-form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .conges-header {
+    flex-direction: column;
+  }
+}

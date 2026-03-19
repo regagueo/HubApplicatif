@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chat-service
+  namespace: portail-intranet
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chat-service
+  template:
+    metadata:
+      labels:
+        app: chat-service
+    spec:
+      containers:
+        - name: chat-service
+          image: portail-intranet/chat-service:2.0.0
+          ports:
+            - containerPort: 8085
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "prod"
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: portail-config
+                  key: DB_HOST
+            - name: JWT_SECRET
+              valueFrom:
+                configMapKeyRef:
+                  name: portail-config
+                  key: JWT_SECRET
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chat-service
+  namespace: portail-intranet
+spec:
+  selector:
+    app: chat-service
+  ports:
+    - port: 8085
+      targetPort: 8085
+  type: ClusterIP

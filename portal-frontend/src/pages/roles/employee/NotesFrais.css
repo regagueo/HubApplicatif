@@ -1,0 +1,402 @@
+/* Notes de frais - Maquette CBI Connect */
+.notes-frais-page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.notes-frais-loading {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 2rem;
+}
+
+.notes-frais-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.notes-frais-header h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.25rem 0;
+}
+
+.notes-frais-subtitle {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.notes-frais-encours-card {
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  color: #fff;
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-lg);
+  min-width: 160px;
+  text-align: right;
+}
+
+.notes-frais-encours-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  opacity: 0.9;
+}
+
+.notes-frais-encours-montant {
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.notes-frais-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  margin-bottom: 1rem;
+}
+
+.notes-frais-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.notes-frais-card h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.notes-frais-form-card .notes-frais-form-desc {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin: 0 0 1.25rem 0;
+}
+
+.notes-frais-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.notes-frais-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.notes-frais-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.notes-frais-form-group label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.notes-frais-form-group input,
+.notes-frais-form-group select,
+.notes-frais-form-group textarea {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.95rem;
+  background: var(--bg-page);
+}
+
+.notes-frais-form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.notes-frais-upload {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  text-align: center;
+  position: relative;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.notes-frais-upload:hover,
+.notes-frais-upload.drag-over {
+  border-color: var(--accent);
+  background: rgba(14, 165, 233, 0.05);
+}
+
+.notes-frais-upload p {
+  margin: 0.5rem 0 0.25rem 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.notes-frais-upload-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.notes-frais-upload-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.notes-frais-upload-file {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--accent);
+}
+
+.notes-frais-btn-submit {
+  align-self: flex-start;
+  padding: 0.65rem 1.25rem;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.notes-frais-btn-submit:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.notes-frais-btn-submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.notes-frais-ref {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin: 0 0 0.5rem 0;
+}
+
+.notes-frais-phase-tag {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+}
+
+.notes-frais-phase-tag.statut-attente {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.notes-frais-workflow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.notes-frais-workflow-step {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  background: var(--bg-page);
+  border: 1px solid var(--border);
+}
+
+.notes-frais-workflow-step .step-icon {
+  color: var(--text-muted);
+}
+
+.notes-frais-workflow-step.done .step-icon {
+  color: #16a34a;
+}
+
+.notes-frais-workflow-step.current {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.notes-frais-workflow-step.current .step-icon {
+  color: var(--accent);
+}
+
+.notes-frais-workflow-arrow {
+  width: 20px;
+  height: 2px;
+  background: var(--border);
+}
+
+.notes-frais-histoire-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.notes-frais-btn-export {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.notes-frais-btn-export:hover:not(:disabled) {
+  background: var(--bg-page);
+}
+
+.notes-frais-table-wrap {
+  overflow-x: auto;
+}
+
+.notes-frais-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.notes-frais-table th,
+.notes-frais-table td {
+  padding: 0.65rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.notes-frais-table th {
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.notes-frais-table td {
+  color: var(--text-primary);
+}
+
+.notes-frais-badge-cat,
+.notes-frais-badge-statut {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+.notes-frais-badge-cat {
+  background: #f1f5f9;
+  color: var(--text-secondary);
+}
+
+.notes-frais-badge-statut.statut-paye {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.notes-frais-badge-statut.statut-valide {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.notes-frais-badge-statut.statut-attente {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.notes-frais-badge-statut.statut-refuse {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.notes-frais-link-tout {
+  display: inline-block;
+  margin-top: 0.75rem;
+  font-size: 0.9rem;
+  color: var(--accent);
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+}
+
+.notes-frais-link-tout:hover {
+  text-decoration: underline;
+}
+
+.notes-frais-rappel {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: #e0f2fe;
+  border: 1px solid #bae6fd;
+  border-radius: var(--radius-lg);
+  color: #0369a1;
+}
+
+.notes-frais-rappel svg {
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.notes-frais-rappel p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 640px) {
+  .notes-frais-form-row {
+    grid-template-columns: 1fr;
+  }
+  .notes-frais-header {
+    flex-direction: column;
+  }
+  .notes-frais-workflow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .notes-frais-workflow-arrow {
+    width: 2px;
+    height: 16px;
+    margin-left: 1.25rem;
+  }
+}

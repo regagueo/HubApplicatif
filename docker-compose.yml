@@ -1,0 +1,54 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: hubapp-postgres
+    environment:
+      POSTGRES_USER: hubapp
+      POSTGRES_PASSWORD: hubapp
+      POSTGRES_DB: hubapp
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hubapp -d hubapp"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  mongo:
+    image: mongo:7
+    container_name: hubapp-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  postgres-init:
+    image: postgres:15-alpine
+    container_name: hubapp-postgres-init
+    environment:
+      PGHOST: postgres
+      PGUSER: hubapp
+      PGPASSWORD: hubapp
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        until pg_isready -h postgres -U hubapp; do sleep 1; done
+        for db in employee_db manager_db rh_db dg_db admin_db conges_db; do
+          psql -h postgres -U hubapp -d hubapp -tc "SELECT 1 FROM pg_database WHERE datname = '$$db'" | grep -q 1 || psql -h postgres -U hubapp -d hubapp -c "CREATE DATABASE $$db;"
+        done
+        echo "PostgreSQL databases ready"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  mongo_data:

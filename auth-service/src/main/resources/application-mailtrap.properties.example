@@ -1,0 +1,14 @@
+# Exemple de configuration Mailtrap pour MFA OTP
+# Copier dans application-dev.properties ou application.properties
+
+# Mailtrap Sandbox SMTP
+spring.mail.host=sandbox.smtp.mailtrap.io
+spring.mail.port=587
+spring.mail.username=3706f0418344b5
+spring.mail.password=8bb0aa85fbd790
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+
+# MFA : expiration 5 min, max 5 tentatives
+app.mfa.otp-validity-minutes=5
+app.mfa.max-attempts=5

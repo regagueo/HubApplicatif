@@ -1,0 +1,18 @@
+# IDE
+.idea/
+*.iml
+
+# Frontend
+node_modules/
+dist/
+build/
+
+# Backend Java
+target/
+*.log
+
+# OS
+.DS_Store
+
+# Env
+.env

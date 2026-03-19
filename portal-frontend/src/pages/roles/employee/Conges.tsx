@@ -1,0 +1,392 @@
+import { useState, useEffect } from 'react'
+import { useAuth } from '../../../context/AuthContext'
+import {
+  Calendar,
+  Clock,
+  Info,
+  Send,
+  ChevronRight
+} from 'lucide-react'
+import * as api from '../../../api/conges'
+import type { SoldeCongesDto, DemandeCongesDto, CreateDemandeRequest, HistoriqueSoldeDto } from '../../../api/conges'
+import './Conges.css'
+
+const MOTIFS = [
+  { value: 'CONGES_ANNUELS', label: 'Congés Annuels' },
+  { value: 'RTT', label: 'RTT' },
+  { value: 'EVENEMENT_FAMILIAL', label: 'Événement familial' },
+  { value: 'CONGES_EXCEPTIONNELS', label: 'Congés Exceptionnels' },
+  { value: 'MALADIE', label: 'Maladie' },
+  { value: 'AUTRE', label: 'Autre' }
+]
+
+const PERIODES = [
+  { value: 'JOURNEE_COMPLETE', label: 'Journée(s) complète(s)' },
+  { value: 'DEMI_JOURNEE', label: 'Demi-journée' }
+]
+
+const ANNEES = [2026, 2025, 2024]
+const STATUTS = [
+  { value: 'TOUS', label: 'Tous les statuts' },
+  { value: 'EN_ATTENTE_MANAGER', label: 'En attente Manager' },
+  { value: 'EN_ATTENTE_RH', label: 'En attente RH' },
+  { value: 'VALIDE', label: 'Validé' },
+  { value: 'REFUSE', label: 'Refusé' }
+]
+
+export default function Conges() {
+  const { user } = useAuth()
+  const [soldes, setSoldes] = useState<SoldeCongesDto[]>([])
+  const [demandes, setDemandes] = useState<DemandeCongesDto[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [annee, setAnnee] = useState(new Date().getFullYear())
+  const [statutFilter, setStatutFilter] = useState('TOUS')
+  const [showForm, setShowForm] = useState(false)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [suiviDemandeId, setSuiviDemandeId] = useState<number | null>(null)
+  const [historiqueSolde, setHistoriqueSolde] = useState<HistoriqueSoldeDto[]>([])
+  const [loadingHistSolde, setLoadingHistSolde] = useState(false)
+  const [form, setForm] = useState<CreateDemandeRequest>({
+    dateDebut: '',
+    dateFin: '',
+    motif: 'CONGES_ANNUELS',
+    periode: 'JOURNEE_COMPLETE',
+    commentaire: ''
+  })
+
+  const employeeId = user?.id ?? 0
+
+  useEffect(() => {
+    if (!employeeId) {
+      setLoading(false)
+      return
+    }
+    setLoading(true)
+    setError(null)
+    Promise.all([
+      api.getSoldes(employeeId).then(setSoldes).catch(() => setSoldes([])),
+      api.getDemandes(employeeId, annee, statutFilter === 'TOUS' ? undefined : statutFilter).then(setDemandes).catch(() => setDemandes([]))
+    ])
+      .catch((e) => setError(e instanceof Error ? e.message : 'Erreur'))
+      .finally(() => setLoading(false))
+  }, [employeeId, annee, statutFilter])
+
+  useEffect(() => {
+    if (!employeeId) return
+    setLoadingHistSolde(true)
+    api.getHistoriqueSolde(employeeId, annee)
+      .then(setHistoriqueSolde)
+      .catch(() => setHistoriqueSolde([]))
+      .finally(() => setLoadingHistSolde(false))
+  }, [employeeId, annee])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!employeeId || !form.dateDebut || !form.dateFin) return
+    try {
+      if (editingId) {
+        await api.updateDemande(employeeId, editingId, form)
+        setEditingId(null)
+      } else {
+        await api.createDemande(employeeId, form)
+      }
+      setForm({ dateDebut: '', dateFin: '', motif: 'CONGES_ANNUELS', periode: 'JOURNEE_COMPLETE', commentaire: '' })
+      setShowForm(false)
+      const [s, d] = await Promise.all([api.getSoldes(employeeId), api.getDemandes(employeeId, annee, statutFilter === 'TOUS' ? undefined : statutFilter)])
+      setSoldes(s)
+      setDemandes(d)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur')
+    }
+  }
+
+  const handleAnnulerDemande = async (demandeId: number) => {
+    if (!employeeId || !window.confirm('Annuler cette demande ?')) return
+    try {
+      await api.annulerDemande(employeeId, demandeId)
+      setDemandes(await api.getDemandes(employeeId, annee, statutFilter === 'TOUS' ? undefined : statutFilter))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur')
+    }
+  }
+
+  const soldeByType = (type: string) => soldes.find((s) => s.type === type)
+  const dureeLabel = (d: DemandeCongesDto) => (d.dureeJours === 0.5 ? '0.5 jour' : d.dureeJours === 1 ? '1 jour' : `${d.dureeJours} jours`)
+  const canEdit = (d: DemandeCongesDto) => d.statut === 'EN_ATTENTE_MANAGER' || d.statut === 'SOUMMIS'
+  const selectedDemande = suiviDemandeId ? demandes.find((d) => d.id === suiviDemandeId) : null
+
+  if (loading && !soldes.length) {
+    return (
+      <div className="conges-page">
+        <p className="conges-loading">Chargement...</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="conges-page">
+      <header className="conges-header">
+        <div>
+          <h1>Congés & Absences</h1>
+          <p className="conges-subtitle">Gérez vos demandes de temps libre et suivez vos soldes en temps réel.</p>
+        </div>
+        <button type="button" className="conges-btn-politique">
+          Politique de congés
+        </button>
+      </header>
+
+      {error && (
+        <div className="conges-error">
+          {error}
+        </div>
+      )}
+
+      <section className="conges-soldes">
+        <div className="conges-solde-card">
+          <Calendar size={20} className="conges-solde-icon" />
+          <div>
+            <span className="conges-solde-label">Congés Annuels</span>
+            <span className="conges-solde-value">{soldeByType('ANNUEL')?.joursRestants ?? 0} jours</span>
+          </div>
+          <Info size={14} className="conges-solde-info" />
+        </div>
+        <div className="conges-solde-card">
+          <Clock size={20} className="conges-solde-icon" />
+          <div>
+            <span className="conges-solde-label">RTT</span>
+            <span className="conges-solde-value">{soldeByType('RTT')?.joursRestants ?? 0} jours</span>
+          </div>
+          <Info size={14} className="conges-solde-info" />
+        </div>
+        <div className="conges-solde-card">
+          <Clock size={20} className="conges-solde-icon" />
+          <div>
+            <span className="conges-solde-label">Congés Exceptionnels</span>
+            <span className="conges-solde-value">{soldeByType('EXCEPTIONNEL')?.joursRestants ?? 0} jours</span>
+          </div>
+          <Info size={14} className="conges-solde-info" />
+        </div>
+        <div className="conges-solde-card">
+          <Clock size={20} className="conges-solde-icon" />
+          <div>
+            <span className="conges-solde-label">Maladie (Total An)</span>
+            <span className="conges-solde-value">{soldeByType('MALADIE')?.joursRestants ?? 0} jours</span>
+          </div>
+          <Info size={14} className="conges-solde-info" />
+        </div>
+      </section>
+
+      <div className="conges-main-grid">
+        <div className="conges-form-section">
+          <h2 className="conges-form-title">
+            <Send size={20} />
+            Nouvelle demande d&apos;absence
+          </h2>
+          <p className="conges-form-desc">Remplissez les détails ci-dessous pour soumettre votre demande à validation.</p>
+          <form onSubmit={handleSubmit} className="conges-form">
+            <div className="conges-form-row">
+              <div className="conges-form-group">
+                <label>Date de début</label>
+                <input
+                  type="date"
+                  value={form.dateDebut}
+                  onChange={(e) => setForm({ ...form, dateDebut: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="conges-form-group">
+                <label>Date de fin</label>
+                <input
+                  type="date"
+                  value={form.dateFin}
+                  onChange={(e) => setForm({ ...form, dateFin: e.target.value })}
+                  required
+                />
+              </div>
+            </div>
+            <div className="conges-form-group">
+              <label>Motif de l&apos;absence</label>
+              <select
+                value={form.motif}
+                onChange={(e) => setForm({ ...form, motif: e.target.value })}
+              >
+                {MOTIFS.map((m) => (
+                  <option key={m.value} value={m.value}>{m.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="conges-form-group">
+              <label>Période</label>
+              <select
+                value={form.periode}
+                onChange={(e) => setForm({ ...form, periode: e.target.value })}
+              >
+                {PERIODES.map((p) => (
+                  <option key={p.value} value={p.value}>{p.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="conges-form-group">
+              <label>Commentaires (Optionnel)</label>
+              <textarea
+                value={form.commentaire ?? ''}
+                onChange={(e) => setForm({ ...form, commentaire: e.target.value })}
+                placeholder="Précisez les détails de votre absence ou l'organisation de votre remplacement..."
+                rows={3}
+              />
+            </div>
+            <div className="conges-form-actions">
+              <button type="button" className="conges-btn-secondary" onClick={() => { setShowForm(false); setEditingId(null); setForm({ dateDebut: '', dateFin: '', motif: 'CONGES_ANNUELS', periode: 'JOURNEE_COMPLETE', commentaire: '' }) }}>
+                Annuler
+              </button>
+              <button type="submit" className="conges-btn-primary">
+                Soumettre la demande
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <aside className="conges-suivi-section">
+          <h2 className="conges-suivi-title">Suivi de Validation</h2>
+          <p className="conges-suivi-subtitle">CIRCUIT DE VALIDATION TYPE</p>
+          <div className="conges-suivi-steps">
+            <div className="conges-step conges-step-done">
+              <div className="conges-step-dot" />
+              <span>Soumission</span>
+              <span className="conges-step-date">Aujourd&apos;hui</span>
+            </div>
+            <div className="conges-step conges-step-current">
+              <div className="conges-step-dot" />
+              <span>Validation Manager</span>
+              <span className="conges-step-date">En attente</span>
+            </div>
+            <div className="conges-step">
+              <div className="conges-step-dot conges-step-dot-dashed" />
+              <span>Validation RH</span>
+              <span className="conges-step-date">—</span>
+            </div>
+          </div>
+          <div className="conges-info-box">
+            <Info size={18} />
+            <p>Toute demande doit être soumise au moins 15 jours à l&apos;avance pour les congés de plus de 3 jours. Pensez à informer votre équipe après validation.</p>
+          </div>
+        </aside>
+      </div>
+
+      <section className="conges-historique">
+        <h2 className="conges-historique-title">
+          <Clock size={20} />
+          Historique des demandes
+        </h2>
+        <div className="conges-filters">
+          <span>Filtres:</span>
+          <select value={annee} onChange={(e) => setAnnee(Number(e.target.value))}>
+            {ANNEES.map((y) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+          <select value={statutFilter} onChange={(e) => setStatutFilter(e.target.value)}>
+            {STATUTS.map((s) => (
+              <option key={s.value} value={s.value}>{s.label}</option>
+            ))}
+          </select>
+        </div>
+        <div className="conges-table-wrap">
+          <table className="conges-table">
+            <thead>
+              <tr>
+                <th>Dates</th>
+                <th>Motif</th>
+                <th>Durée</th>
+                <th>Statut</th>
+                <th>Validateur</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {demandes.map((d) => (
+                <tr key={d.id}>
+                  <td>{d.dateDebut === d.dateFin ? d.dateDebut : `${d.dateDebut} - ${d.dateFin}`}</td>
+                  <td>{d.motif}</td>
+                  <td>{dureeLabel(d)}</td>
+                  <td>
+                    <span className={`conges-statut conges-statut-${d.statut.toLowerCase()}`}>
+                      {d.statutLabel}
+                    </span>
+                  </td>
+                  <td>{d.validateurNom}</td>
+                  <td>
+                    <button type="button" className="conges-link" onClick={() => setSuiviDemandeId(d.id)}>Détails</button>
+                    {canEdit(d) && (
+                      <>
+                        <button type="button" className="conges-link" onClick={() => { setEditingId(d.id); setForm({ dateDebut: d.dateDebut.replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$3-$2-$1'), dateFin: d.dateFin.replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$3-$2-$1'), motif: d.motifCode, periode: d.periode, commentaire: d.commentaire ?? '' }); setShowForm(true) }}>Modifier</button>
+                        <button type="button" className="conges-link conges-link-danger" onClick={() => handleAnnulerDemande(d.id)}>Annuler</button>
+                      </>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="conges-historique conges-hist-solde">
+        <h2 className="conges-historique-title">
+          <Clock size={20} />
+          Historique des acquisitions &amp; consommations
+        </h2>
+        {loadingHistSolde ? (
+          <p className="conges-empty">Chargement...</p>
+        ) : historiqueSolde.length === 0 ? (
+          <p className="conges-empty">Aucun mouvement enregistré pour {annee}.</p>
+        ) : (
+          <div className="conges-table-wrap">
+            <table className="conges-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Type</th>
+                  <th>Valeur</th>
+                  <th>Libellé</th>
+                </tr>
+              </thead>
+              <tbody>
+                {historiqueSolde.map((h) => {
+                  const isAcq = h.typeMouvement.includes('ACQUISITION')
+                  const dateStr = h.dateMouvement
+                    ? new Date(h.dateMouvement).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                    : '—'
+                  return (
+                    <tr key={h.id}>
+                      <td>{dateStr}</td>
+                      <td>
+                        <span className={`conges-mouvement-type ${isAcq ? 'conges-mouvement-acq' : 'conges-mouvement-cons'}`}>
+                          {isAcq ? 'Acquisition' : 'Consommation'}
+                        </span>
+                      </td>
+                      <td className={h.valeur >= 0 ? 'conges-val-pos' : 'conges-val-neg'}>
+                        {h.valeur > 0 ? '+' : ''}{h.valeur} jour{Math.abs(h.valeur) > 1 ? 's' : ''}
+                      </td>
+                      <td>{h.libelle}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <footer className="conges-footer">
+        <div className="conges-footer-support">
+          <strong>SUPPORT RH</strong>
+          <p>Besoin d&apos;aide ? Contactez l&apos;assistance au 05 XX XXXX</p>
+        </div>
+        <p className="conges-footer-copy">© 2026 CBI Maroc - CBI Connect Employee Portal. Tous droits réservés.</p>
+      </footer>
+    </div>
+  )
+}

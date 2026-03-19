@@ -1,0 +1,25 @@
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: auth-service
+          uri: http://auth-service:8081
+          predicates:
+            - Path=/auth/**
+          filters:
+            - StripPrefix=0
+        - id: chat-websocket
+          uri: ws://chat-service:8085
+          predicates:
+            - Path=/chat/ws/**
+          filters:
+            - StripPrefix=1
+        - id: chat-service
+          uri: http://chat-service:8085
+          predicates:
+            - Path=/chat/**
+          filters:
+            - StripPrefix=0
+            - name: JwtAuth
+              args:
+                enabled: true
