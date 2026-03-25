@@ -24,6 +24,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final UserDetailsService userDetailsService;
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        // Do not interfere with OAuth2 login handshake endpoints.
+        return path.startsWith("/oauth2/")
+                || path.startsWith("/login/oauth2/")
+                || "/".equals(path)
+                || "/login".equals(path)
+                || "/error".equals(path);
+    }
+
+    @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {

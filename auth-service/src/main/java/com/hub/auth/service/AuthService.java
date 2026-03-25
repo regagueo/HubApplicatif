@@ -14,8 +14,10 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -153,6 +155,42 @@ public class AuthService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found: " + id));
         return mapToUserResponse(user);
+    }
+
+    public MeResponse getConnectedUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new RuntimeException("Non authentifié");
+        }
+
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof UserPrincipal userPrincipal) {
+            User user = userPrincipal.getUser();
+            Set<String> roles = user.getRoles().stream().map(Enum::name).collect(Collectors.toSet());
+            String fullName = ((user.getFirstName() != null ? user.getFirstName() : "") + " "
+                    + (user.getLastName() != null ? user.getLastName() : "")).trim();
+            if (fullName.isBlank()) fullName = user.getUsername();
+            return MeResponse.builder()
+                    .name(fullName)
+                    .email(user.getEmail())
+                    .roles(roles)
+                    .build();
+        }
+
+        if (principal instanceof OidcUser oidcUser) {
+            Set<String> roles = authentication.getAuthorities().stream()
+                    .map(GrantedAuthority::getAuthority)
+                    .filter(a -> a.startsWith("ROLE_"))
+                    .map(a -> a.substring("ROLE_".length()))
+                    .collect(Collectors.toSet());
+            return MeResponse.builder()
+                    .name(oidcUser.getFullName() != null ? oidcUser.getFullName() : oidcUser.getPreferredUsername())
+                    .email(oidcUser.getEmail() != null ? oidcUser.getEmail() : oidcUser.getPreferredUsername())
+                    .roles(roles)
+                    .build();
+        }
+
+        throw new RuntimeException("Principal non supporté");
     }
 
     private UserResponse mapToUserResponse(User user) {

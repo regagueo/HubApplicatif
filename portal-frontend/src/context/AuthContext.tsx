@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, ReactNode } from 'react'
 
-interface User {
+export interface User {
   id: number
   username: string
   email: string
@@ -18,6 +18,7 @@ interface AuthContextType {
   verifyMfa: (code: string) => Promise<void>
   resendOtp: () => Promise<void>
   clearPendingMfa: () => void
+  loginWithAccessToken: (accessToken: string) => Promise<User>
   updateUser: (updates: Partial<User>) => void
   logout: () => void
 }
@@ -107,6 +108,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const clearPendingMfa = () => setPendingMfa(null)
 
+  const loginWithAccessToken = async (accessToken: string): Promise<User> => {
+    const res = await fetch(`${apiBase}/me`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    })
+    const text = await res.text()
+    let data: User | { error?: string } = {} as User
+    try { data = text ? JSON.parse(text) : {} as User } catch { throw new Error('Réponse invalide du serveur') }
+    if (!res.ok) throw new Error((data as { error?: string }).error || 'Impossible de charger le profil utilisateur')
+    const profile = data as User
+    setToken(accessToken)
+    setUser(profile)
+    localStorage.setItem(TOKEN_KEY, accessToken)
+    localStorage.setItem(USER_KEY, JSON.stringify(profile))
+    return profile
+  }
+
   const updateUser = (updates: Partial<User>) => {
     if (user) {
       const updated = { ...user, ...updates }
@@ -123,7 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ token, user, pendingMfa, login, verifyMfa, resendOtp, clearPendingMfa, updateUser, logout }}>
+    <AuthContext.Provider value={{ token, user, pendingMfa, login, verifyMfa, resendOtp, clearPendingMfa, loginWithAccessToken, updateUser, logout }}>
       {children}
     </AuthContext.Provider>
   )

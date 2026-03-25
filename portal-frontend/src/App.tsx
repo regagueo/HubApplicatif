@@ -43,6 +43,8 @@ function DefaultRedirect() {
 
   if (hasRole(roles, 'ADMIN')) return <Navigate to="/admin" replace />
   if (hasRole(roles, 'DG')) return <Navigate to="/dashboard-dg" replace />
+  if (hasRole(roles, 'RH')) return <Navigate to="/rh" replace />
+  if (hasRole(roles, 'MANAGER')) return <Navigate to="/conges" replace />
   return <EmployeeDashboard />
 }
 
@@ -62,10 +64,32 @@ function App() {
           }
         />
         <Route
+          path="/home"
+          element={
+            <ProtectedRoute>
+              <ProtectedLayout>
+                <DefaultRedirect />
+              </ProtectedLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/conges"
           element={
             <ProtectedRoute>
               <RoleRoute roles={['EMPLOYEE', 'MANAGER', 'RH']}>
+                <ProtectedLayout>
+                  <Conges />
+                </ProtectedLayout>
+              </RoleRoute>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/manager"
+          element={
+            <ProtectedRoute>
+              <RoleRoute roles={['MANAGER']}>
                 <ProtectedLayout>
                   <Conges />
                 </ProtectedLayout>

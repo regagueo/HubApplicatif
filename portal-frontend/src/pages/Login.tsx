@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
-import { useAuth } from '../context/AuthContext'
+import { useAuth, type User } from '../context/AuthContext'
+
 
 export default function Login() {
   const [username, setUsername] = useState('')
@@ -11,8 +12,40 @@ export default function Login() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [resending, setResending] = useState(false)
-  const { login, verifyMfa, resendOtp, pendingMfa, clearPendingMfa } = useAuth()
+  const { login, verifyMfa, resendOtp, pendingMfa, clearPendingMfa, loginWithAccessToken } = useAuth()
   const navigate = useNavigate()
+
+  const hasRole = (profile: User, role: string): boolean => {
+    return (profile.roles || []).some((r) => (r.startsWith('ROLE_') ? r.slice(5) : r) === role)
+  }
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const ssoToken = params.get('ssoToken')
+    const ssoError = params.get('ssoError')
+    if (ssoError) {
+      setError(`SSO Microsoft: ${ssoError}`)
+      return
+    }
+    if (!ssoToken) return
+
+    setLoading(true)
+    loginWithAccessToken(ssoToken)
+      .then((profile) => {
+        window.history.replaceState({}, document.title, window.location.pathname)
+        if (hasRole(profile, 'RH')) {
+          navigate('/rh')
+          return
+        }
+        if (hasRole(profile, 'MANAGER')) {
+          navigate('/manager')
+          return
+        }
+        navigate('/home')
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : 'Erreur SSO Microsoft'))
+      .finally(() => setLoading(false))
+  }, [loginWithAccessToken, navigate])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -189,6 +222,28 @@ export default function Login() {
             }}
           >
             {loading ? 'Connexion...' : 'Se connecter'}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const authBase = import.meta.env.DEV
+                ? 'http://localhost:8081'
+                : (import.meta.env.VITE_API_URL || window.location.origin)
+              window.location.href = `${authBase}/oauth2/authorization/azure`
+            }}
+            style={{
+              width: '100%',
+              marginTop: '0.75rem',
+              padding: '0.75rem',
+              borderRadius: '8px',
+              border: '1px solid var(--border)',
+              background: 'white',
+              color: '#111827',
+              fontSize: '1rem',
+              cursor: 'pointer'
+            }}
+          >
+            Se connecter avec Azure
           </button>
         </form>
       </div>
