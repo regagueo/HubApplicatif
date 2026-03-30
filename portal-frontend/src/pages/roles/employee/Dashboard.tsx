@@ -7,25 +7,15 @@ import {
   AlertCircle,
   FileText,
   Plus,
-  ChevronRight,
-  Users
+  ChevronRight
 } from 'lucide-react'
 import {
-  fetchConges,
   fetchNotesFrais,
   fetchIndicators,
-  fetchAlerts,
-  fetchColleagues
+  fetchAlerts
 } from '../../../api/employee'
+import { getDemandes, type DemandeCongesDto } from '../../../api/conges'
 import './employee.css'
-
-interface DemandeConges {
-  id: number
-  type: string
-  dateDebut: string
-  dateFin: string
-  statut: 'EN_ATTENTE' | 'VALIDE' | 'REJETE'
-}
 
 interface Notification {
   id: number
@@ -33,13 +23,6 @@ interface Notification {
   titre: string
   message: string
   date: string
-}
-
-interface Collaborateur {
-  id: number
-  nom: string
-  service: string
-  avatar?: string
 }
 
 const defaultNotesFrais = {
@@ -95,56 +78,81 @@ function DonutChart({ joursPris, joursRestants }: { joursPris: number; joursRest
 
 export default function DashboardEmployee() {
   const { user } = useAuth()
-  const [demandesConges, setDemandesConges] = useState<DemandeConges[]>([])
+  const [demandesConges, setDemandesConges] = useState<DemandeCongesDto[]>([])
   const [notesFrais, setNotesFrais] = useState(defaultNotesFrais)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [indicateurs, setIndicateurs] = useState(defaultIndicateurs)
-  const [collaborateurs, setCollaborateurs] = useState<Collaborateur[]>([])
-  const [searchCollab, setSearchCollab] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showAllConges, setShowAllConges] = useState(false)
+
+  const employeeId = (() => {
+    const token = localStorage.getItem('portail_auth_token')
+    if (token) {
+      try {
+        const part = token.split('.')[1] || ''
+        let base64 = part.replace(/-/g, '+').replace(/_/g, '/')
+        const padLen = base64.length % 4
+        if (padLen) base64 = base64 + '='.repeat(4 - padLen)
+        const payload = JSON.parse(atob(base64))
+        const raw = payload?.userId ?? payload?.id
+        const parsed = typeof raw === 'number' ? raw : Number(raw)
+        if (Number.isFinite(parsed) && parsed > 0) return parsed
+      } catch {
+        // fallback below
+      }
+    }
+    if (typeof user?.id === 'number' && Number.isFinite(user.id) && user.id > 0) return user.id
+    return 0
+  })()
 
   useEffect(() => {
-    if (!user?.id) {
+    if (!employeeId) {
       setLoading(false)
       return
     }
-    const id = user.id
+    const id = employeeId
     setLoading(true)
     setError(null)
     Promise.all([
-      fetchConges(id).then(setDemandesConges).catch(() => setDemandesConges([])),
+      getDemandes(id, new Date().getFullYear())
+        .then(setDemandesConges)
+        .catch(() => setDemandesConges([])),
       fetchNotesFrais(id).then(setNotesFrais).catch(() => setNotesFrais(defaultNotesFrais)),
       fetchIndicators(id).then((r) => setIndicateurs({
         joursPris: r.joursPris ?? 0,
         joursRestants: r.joursRestants ?? 0,
         totalJours: r.totalJours ?? 22
       })).catch(() => setIndicateurs(defaultIndicateurs)),
-      fetchAlerts(id).then((data) => setNotifications(data as Notification[])).catch(() => setNotifications([])),
-      fetchColleagues(id).then(setCollaborateurs).catch(() => setCollaborateurs([]))
+      fetchAlerts(id).then((data) => setNotifications(data as Notification[])).catch(() => setNotifications([]))
     ])
       .then(() => setError(null))
       .catch((e) => setError(e instanceof Error ? e.message : 'Erreur chargement'))
       .finally(() => setLoading(false))
-  }, [user?.id])
+  }, [employeeId])
 
-  const filteredCollabs = searchCollab.trim()
-    ? collaborateurs.filter(
-        (c) =>
-          c.nom.toLowerCase().includes(searchCollab.toLowerCase()) ||
-          c.service.toLowerCase().includes(searchCollab.toLowerCase())
-      )
-    : collaborateurs
-
-  const getStatutBadge = (statut: DemandeConges['statut']) => {
+  const getStatutBadge = (statut: string, statutLabel?: string) => {
     const map = {
-      EN_ATTENTE: { label: 'En attente', className: 'statut-attente' },
-      VALIDE: { label: 'Validé', className: 'statut-valide' },
-      REJETE: { label: 'Rejeté', className: 'statut-refuse' }
-    }
-    const { label, className } = map[statut]
+      SOUMMIS: { label: 'En attente RH/Manager', className: 'statut-attente' },
+      EN_ATTENTE: { label: 'En attente RH/Manager', className: 'statut-attente' },
+      EN_ATTENTE_MANAGER: { label: 'En attente Manager', className: 'statut-attente' },
+      EN_ATTENTE_RH: { label: 'En attente RH', className: 'statut-attente' },
+      VALIDE: { label: 'Approuvée', className: 'statut-valide' },
+      REJETE: { label: 'Refusée', className: 'statut-refuse' },
+      REFUSE: { label: 'Refusée', className: 'statut-refuse' }
+    } as Record<string, { label: string; className: string }>
+    const { label, className } = map[statut] ?? { label: statutLabel ?? statut, className: 'statut-attente' }
     return <span className={`badge ${className}`}>{label}</span>
   }
+
+  const formatDuree = (dureeJours?: number): string => {
+    if (typeof dureeJours !== 'number' || !Number.isFinite(dureeJours) || dureeJours <= 0) return '--'
+    if (dureeJours === 0.5) return '0.5 jour'
+    if (dureeJours === 1) return '1 jour'
+    return `${dureeJours} jours`
+  }
+
+  const demandesCongesDisplay = showAllConges ? demandesConges : demandesConges.slice(0, 3)
 
   const getNotificationIcon = (type: Notification['type']) => {
     switch (type) {
@@ -197,28 +205,53 @@ export default function DashboardEmployee() {
             <div className="dashboard-card-header">
               <h2>Mes demandes de congés</h2>
               <Link to="/conges" className="dashboard-card-link">
-                Voir tout <ChevronRight size={16} />
+                <Plus size={16} />
+                Nouvelle demande de congé
               </Link>
             </div>
-            <ul className="demandes-list">
-              {demandesConges.map((d) => (
-                <li key={d.id} className="demande-item">
-                  <Clock size={18} className="demande-icon" />
-                  <div className="demande-content">
-                    <span className="demande-type">{d.type}</span>
-                    <span className="demande-dates">
-                      {d.dateDebut}
-                      {d.dateDebut !== d.dateFin ? ` - ${d.dateFin}` : ''}
-                    </span>
-                  </div>
-                  {getStatutBadge(d.statut)}
-                </li>
-              ))}
-            </ul>
-            <Link to="/conges" className="dashboard-card-action">
-              <Plus size={16} />
-              Nouvelle demande de congé
-            </Link>
+            <div className={`conges-overview-table-wrap ${showAllConges ? 'expanded' : ''}`}>
+              <table className="data-table conges-overview-table">
+                <thead>
+                  <tr>
+                    <th>Dates</th>
+                    <th>Motif</th>
+                    <th>Durée</th>
+                    <th>Statut</th>
+                    <th>Validateur</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {demandesCongesDisplay.map((d) => {
+                    const isPending = d.statut === 'SOUMMIS' || d.statut === 'EN_ATTENTE' || d.statut === 'EN_ATTENTE_MANAGER' || d.statut === 'EN_ATTENTE_RH'
+                    return (
+                      <tr key={d.id}>
+                        <td>{d.dateDebut} - {d.dateFin}</td>
+                        <td>{d.motif}</td>
+                        <td>{formatDuree(d.dureeJours)}</td>
+                        <td>{getStatutBadge(d.statut, d.statutLabel)}</td>
+                        <td>{d.validateurNom && d.validateurNom.trim() && d.validateurNom !== '--' ? d.validateurNom : '--'}</td>
+                        <td className="conges-overview-actions">
+                          <Link to="/conges">Détails</Link>
+                          {isPending && <Link to="/conges">Modifier</Link>}
+                          {isPending && <Link to="/conges" className="danger">Annuler</Link>}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                  {demandesCongesDisplay.length === 0 && (
+                    <tr>
+                      <td colSpan={6}>Aucune demande de congé.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            {demandesConges.length > 3 && (
+              <button type="button" className="dashboard-card-see-more" onClick={() => setShowAllConges((v) => !v)}>
+                {showAllConges ? 'Réduire' : 'Voir plus'} <ChevronRight size={16} />
+              </button>
+            )}
           </section>
 
           {/* Mes notes de frais */}
@@ -302,39 +335,6 @@ export default function DashboardEmployee() {
           </section>
         </div>
 
-        {/* Sidebar collaborateurs */}
-        <aside className="dashboard-collaborateurs">
-          <div className="collaborateurs-header">
-            <Users size={20} />
-            <h2>Collaborateurs</h2>
-            <span className="collaborateurs-count">{collaborateurs.length}</span>
-          </div>
-          <div className="collaborateurs-search">
-            <input
-              type="search"
-              placeholder="Rechercher..."
-              value={searchCollab}
-              onChange={(e) => setSearchCollab(e.target.value)}
-              className="collaborateurs-search-input"
-            />
-          </div>
-          <ul className="collaborateurs-list">
-            {filteredCollabs.map((c) => (
-              <li key={c.id} className="collaborateur-item">
-                <div className="collaborateur-avatar">
-                  {c.nom.split(' ').map((n) => n[0]).join('').slice(0, 2)}
-                </div>
-                <div className="collaborateur-info">
-                  <span className="collaborateur-nom">{c.nom}</span>
-                  <span className="collaborateur-service">{c.service}</span>
-                </div>
-              </li>
-            ))}
-          </ul>
-          <button type="button" className="collaborateurs-view-all">
-            Voir tous les collègues
-          </button>
-        </aside>
       </div>
 
       {/* Support RH - footer */}

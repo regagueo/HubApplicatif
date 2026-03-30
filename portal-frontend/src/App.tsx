@@ -43,8 +43,8 @@ function DefaultRedirect() {
 
   if (hasRole(roles, 'ADMIN')) return <Navigate to="/admin" replace />
   if (hasRole(roles, 'DG')) return <Navigate to="/dashboard-dg" replace />
-  if (hasRole(roles, 'RH')) return <Navigate to="/rh" replace />
-  if (hasRole(roles, 'MANAGER')) return <Navigate to="/conges" replace />
+  if (hasRole(roles, 'RH')) return <EmployeeDashboard />
+  if (hasRole(roles, 'MANAGER')) return <EmployeeDashboard />
   return <EmployeeDashboard />
 }
 

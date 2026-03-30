@@ -1,6 +1,7 @@
 package com.hub.auth.controller;
 
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -13,6 +14,8 @@ import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.servlet.view.RedirectView;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -24,9 +27,19 @@ import java.util.stream.Collectors;
 @RestController
 public class OAuth2FlowController {
 
+    @Value("${app.oauth2.frontend-base-url:http://localhost:3001}")
+    private String frontendBaseUrl;
+
     @GetMapping("/")
     public ResponseEntity<String> root() {
         return ResponseEntity.ok("Auth Service Running");
+    }
+
+    @GetMapping("/login")
+    public RedirectView loginPage(HttpServletRequest request) {
+        String query = request.getQueryString();
+        String target = frontendBaseUrl + "/login" + (query != null && !query.isBlank() ? "?" + query : "");
+        return new RedirectView(target);
     }
 
     @GetMapping("/home")

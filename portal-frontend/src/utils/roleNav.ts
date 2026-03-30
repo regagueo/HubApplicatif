@@ -32,7 +32,6 @@ export const ALL_NAV_ITEMS: NavItem[] = [
   { path: '/conges', label: 'Congés & Absences', icon: CalendarOff, roles: ['EMPLOYEE', 'MANAGER', 'RH'] },
   { path: '/notes-frais', label: 'Notes de frais', icon: Receipt, roles: ['EMPLOYEE', 'MANAGER', 'RH'] },
   { path: '/rh', label: 'Ressources humaines', icon: Building2, roles: ['RH'] },
-  { path: '/indicateurs-internes', label: 'Indicateurs internes', icon: BarChart3, roles: ['EMPLOYEE', 'MANAGER', 'RH'] },
   { path: '/indicateurs-rh', label: 'Indicateurs RH', icon: BarChart3, roles: ['RH'] },
   { path: '/dashboard-dg', label: 'Tableau de bord global', icon: LayoutDashboard, roles: ['DG'] },
   { path: '/indicateurs-consolides', label: 'Indicateurs consolidés', icon: BarChart3, roles: ['DG'] },

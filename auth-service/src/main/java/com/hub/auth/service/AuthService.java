@@ -171,6 +171,8 @@ public class AuthService {
                     + (user.getLastName() != null ? user.getLastName() : "")).trim();
             if (fullName.isBlank()) fullName = user.getUsername();
             return MeResponse.builder()
+                    .id(user.getId())
+                    .username(user.getUsername())
                     .name(fullName)
                     .email(user.getEmail())
                     .roles(roles)
@@ -183,9 +185,13 @@ public class AuthService {
                     .filter(a -> a.startsWith("ROLE_"))
                     .map(a -> a.substring("ROLE_".length()))
                     .collect(Collectors.toSet());
+            String resolvedEmail = oidcUser.getEmail() != null ? oidcUser.getEmail() : oidcUser.getPreferredUsername();
+            User localUser = resolvedEmail != null ? userRepository.findByEmail(resolvedEmail).orElse(null) : null;
             return MeResponse.builder()
+                    .id(localUser != null ? localUser.getId() : null)
+                    .username(localUser != null ? localUser.getUsername() : (oidcUser.getPreferredUsername() != null ? oidcUser.getPreferredUsername() : oidcUser.getName()))
                     .name(oidcUser.getFullName() != null ? oidcUser.getFullName() : oidcUser.getPreferredUsername())
-                    .email(oidcUser.getEmail() != null ? oidcUser.getEmail() : oidcUser.getPreferredUsername())
+                    .email(resolvedEmail)
                     .roles(roles)
                     .build();
         }

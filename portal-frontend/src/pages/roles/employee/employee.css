@@ -100,6 +100,51 @@
   color: var(--accent-hover);
 }
 
+/* Dashboard congés - tableau maquette */
+.conges-overview-table-wrap {
+  overflow-x: auto;
+}
+
+.conges-overview-table-wrap.expanded {
+  max-height: 380px;
+  overflow-y: auto;
+}
+
+.conges-overview-table .badge {
+  white-space: nowrap;
+}
+
+.conges-overview-actions {
+  white-space: nowrap;
+}
+
+.conges-overview-actions a {
+  color: var(--accent);
+  text-decoration: none;
+  margin-right: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.conges-overview-actions a:last-child {
+  margin-right: 0;
+}
+
+.conges-overview-actions a.danger {
+  color: var(--error);
+}
+
+.dashboard-card-see-more {
+  margin: 0.75rem auto 0;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: none;
+  background: transparent;
+  color: var(--accent);
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
 /* Demandes de congés */
 .demandes-list {
   list-style: none;

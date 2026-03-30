@@ -134,7 +134,7 @@ spring:
 # JWT validation
 app:
   jwt:
-    secret: ${JWT_SECRET:dGhpcyBpcyBhIDI1Ni1iaXQgc2VjcmV0IGtleSBmb3Igand0IHRlc3Rpbmc=}
+    secret: dGhpcyBpcyBhIDI1Ni1iaXQgc2VjcmV0IGtleSBmb3Igand0IHRlc3Rpbmc=
 
 # Actuator & Prometheus
 management:

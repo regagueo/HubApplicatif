@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
 import { useAuth, type User } from '../context/AuthContext'
-
+import loginBg from '../assets/image.jpeg'
+import companyLogo from '../assets/logo.png'
 
 export default function Login() {
   const [username, setUsername] = useState('')
@@ -34,11 +35,11 @@ export default function Login() {
       .then((profile) => {
         window.history.replaceState({}, document.title, window.location.pathname)
         if (hasRole(profile, 'RH')) {
-          navigate('/rh')
+          navigate('/home')
           return
         }
         if (hasRole(profile, 'MANAGER')) {
-          navigate('/manager')
+          navigate('/home')
           return
         }
         navigate('/home')
@@ -90,8 +91,20 @@ export default function Login() {
 
   if (pendingMfa) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)' }}>
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundImage: `linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)), url(${loginBg})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}>
         <div style={{ background: 'var(--bg-card)', padding: '2.5rem', borderRadius: 'var(--radius-lg)', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', width: '100%', maxWidth: '400px' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+            <img src={companyLogo} alt="Logo CBI" style={{ width: '150px', height: 'auto' }} />
+          </div>
           <h1 style={{ textAlign: 'center', marginBottom: '1.5rem', fontSize: '1.75rem' }}>Vérification en deux étapes</h1>
           <p style={{ textAlign: 'center', color: 'var(--text-secondary)', marginBottom: '1rem' }}>Un code à 6 chiffres a été envoyé à <strong>{pendingMfa.user.email}</strong></p>
           <p style={{ textAlign: 'center', color: 'var(--text-secondary)', marginBottom: '2rem', fontSize: '0.8rem' }}>Consultez Mailtrap ou votre boîte mail. Max 5 tentatives, expiration 5 min.</p>
@@ -123,7 +136,10 @@ export default function Login() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)'
+      backgroundImage: `linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)), url(${loginBg})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat'
     }}>
       <div style={{
         background: 'var(--bg-card)',
@@ -133,6 +149,9 @@ export default function Login() {
         width: '100%',
         maxWidth: '400px'
       }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+          <img src={companyLogo} alt="Logo CBI" style={{ width: '150px', height: 'auto' }} />
+        </div>
         <h1 style={{ textAlign: 'center', marginBottom: '1.5rem', fontSize: '1.75rem' }}>
           Portail Intranet
         </h1>

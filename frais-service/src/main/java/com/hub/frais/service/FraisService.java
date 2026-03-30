@@ -56,11 +56,22 @@ public class FraisService {
                 .anyMatch(a -> ("ROLE_" + role).equals(a.getAuthority()));
     }
 
-    private void checkEmployeeAccess(Long employeeId) {
+    private boolean isPrivilegedReviewer() {
+        return hasRole("MANAGER") || hasRole("COMPTABILITE") || hasRole("RH") || hasRole("ADMIN");
+    }
+
+    /**
+     * Pour les endpoints "mes données", si l'ID URL ne correspond pas au token,
+     * on force l'ID du token (cas fréquent après SSO).
+     */
+    private Long resolveEmployeeIdForRead(Long employeeId) {
         FraisUserPrincipal user = getCurrentUser();
-        if (!user.getUserId().equals(employeeId) && !hasRole("MANAGER") && !hasRole("COMPTABILITE") && !hasRole("RH") && !hasRole("ADMIN")) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Accès refusé");
+        Long currentUserId = user.getUserId();
+        if (currentUserId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Non authentifié");
         }
+        if (isPrivilegedReviewer()) return employeeId;
+        return currentUserId;
     }
 
     @Transactional
@@ -246,8 +257,8 @@ public class FraisService {
     }
 
     public EncoursFraisDto getEncours(Long employeeId) {
-        checkEmployeeAccess(employeeId);
-        List<DemandeFrais> all = demandeRepository.findByEmployeeIdOrderByDateSoumissionDesc(employeeId);
+        Long resolvedEmployeeId = resolveEmployeeIdForRead(employeeId);
+        List<DemandeFrais> all = demandeRepository.findByEmployeeIdOrderByDateSoumissionDesc(resolvedEmployeeId);
         List<DemandeFrais> encoursList = all.stream()
                 .filter(d -> ENCOURS_STATUTS.contains(d.getStatut()))
                 .limit(10)
@@ -263,8 +274,8 @@ public class FraisService {
     }
 
     public List<DemandeFraisDto> getHistorique(Long employeeId) {
-        checkEmployeeAccess(employeeId);
-        return demandeRepository.findByEmployeeIdAndDossierIdIsNullOrderByDateSoumissionDesc(employeeId)
+        Long resolvedEmployeeId = resolveEmployeeIdForRead(employeeId);
+        return demandeRepository.findByEmployeeIdAndDossierIdIsNullOrderByDateSoumissionDesc(resolvedEmployeeId)
                 .stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
@@ -308,8 +319,8 @@ public class FraisService {
     }
 
     public List<DossierFraisDto> getHistoriqueDossiers(Long employeeId) {
-        checkEmployeeAccess(employeeId);
-        return dossierRepository.findByEmployeeIdOrderByDateCreationDesc(employeeId).stream()
+        Long resolvedEmployeeId = resolveEmployeeIdForRead(employeeId);
+        return dossierRepository.findByEmployeeIdOrderByDateCreationDesc(resolvedEmployeeId).stream()
                 .map(this::toDossierDto)
                 .collect(Collectors.toList());
     }
@@ -317,7 +328,10 @@ public class FraisService {
     public DossierFraisDto getDossier(Long dossierId) {
         DossierFrais dossier = dossierRepository.findById(dossierId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dossier introuvable"));
-        checkEmployeeAccess(dossier.getEmployeeId());
+        Long resolvedEmployeeId = resolveEmployeeIdForRead(dossier.getEmployeeId());
+        if (!isPrivilegedReviewer() && !resolvedEmployeeId.equals(dossier.getEmployeeId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Accès refusé");
+        }
         return toDossierDto(dossier);
     }
 

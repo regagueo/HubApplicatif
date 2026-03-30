@@ -40,6 +40,17 @@ const STATUTS = [
   { value: 'REFUSE', label: 'Refusé' }
 ]
 
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+
+function normalizeDateInput(value: string): string {
+  const trimmed = (value ?? '').trim()
+  if (!trimmed) return ''
+  if (ISO_DATE_RE.test(trimmed)) return trimmed
+  const fr = trimmed.match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
+  if (fr) return `${fr[3]}-${fr[2]}-${fr[1]}`
+  return ''
+}
+
 export default function Conges() {
   const { user } = useAuth()
   const [soldes, setSoldes] = useState<SoldeCongesDto[]>([])
@@ -61,7 +72,24 @@ export default function Conges() {
     commentaire: ''
   })
 
-  const employeeId = user?.id ?? 0
+  const employeeId = (() => {
+    if (typeof user?.id === 'number' && Number.isFinite(user.id) && user.id > 0) return user.id
+    const token = localStorage.getItem('portail_auth_token')
+    if (!token) return 0
+    try {
+      const part = token.split('.')[1] || ''
+      // JWT = base64url (pas base64). On convertit vers base64 classique pour `atob`.
+      let base64 = part.replace(/-/g, '+').replace(/_/g, '/')
+      const padLen = base64.length % 4
+      if (padLen) base64 = base64 + '='.repeat(4 - padLen)
+      const payload = JSON.parse(atob(base64))
+      const raw = payload?.userId ?? payload?.id
+      const parsed = typeof raw === 'number' ? raw : Number(raw)
+      return Number.isFinite(parsed) && parsed > 0 ? parsed : 0
+    } catch {
+      return 0
+    }
+  })()
   const roles = user?.roles ?? []
   const isManager = roles.some((r) => r === 'MANAGER' || r === 'ROLE_MANAGER')
   const isRh = roles.some((r) => r === 'RH' || r === 'ROLE_RH' || r === 'ADMIN' || r === 'ROLE_ADMIN')
@@ -70,6 +98,7 @@ export default function Conges() {
   const [demandesAValider, setDemandesAValider] = useState<DemandeCongesDto[]>([])
   const [loadingDemandesAValider, setLoadingDemandesAValider] = useState(false)
   const [actionDemandeId, setActionDemandeId] = useState<number | null>(null)
+  const [demandesSuivi, setDemandesSuivi] = useState<DemandeCongesDto[]>([])
 
   useEffect(() => {
     if (!employeeId) {
@@ -96,7 +125,16 @@ export default function Conges() {
   }, [employeeId, annee])
 
   useEffect(() => {
-    const { dateDebut, dateFin, periode } = form
+    if (!employeeId) return
+    api.getDemandes(employeeId, annee)
+      .then(setDemandesSuivi)
+      .catch(() => setDemandesSuivi([]))
+  }, [employeeId, annee])
+
+  useEffect(() => {
+    const dateDebut = normalizeDateInput(form.dateDebut)
+    const dateFin = normalizeDateInput(form.dateFin)
+    const { periode } = form
     if (!dateDebut || !dateFin || !periode || dateDebut > dateFin) {
       setCalculPreview(null)
       setCalculLoading(false)
@@ -133,13 +171,27 @@ export default function Conges() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!employeeId || !form.dateDebut || !form.dateFin) return
+    const dateDebut = normalizeDateInput(form.dateDebut)
+    const dateFin = normalizeDateInput(form.dateFin)
+    if (!employeeId || !dateDebut || !dateFin) {
+      setError('Dates invalides. Veuillez sélectionner une période valide.')
+      return
+    }
+    if (dateDebut > dateFin) {
+      setError('La date de début doit être antérieure ou égale à la date de fin.')
+      return
+    }
     try {
+      const payload: CreateDemandeRequest = {
+        ...form,
+        dateDebut,
+        dateFin
+      }
       if (editingId) {
-        await api.updateDemande(employeeId, editingId, form)
+        await api.updateDemande(employeeId, editingId, payload)
         setEditingId(null)
       } else {
-        await api.createDemande(employeeId, form)
+        await api.createDemande(employeeId, payload)
       }
       setForm({ dateDebut: '', dateFin: '', motif: 'CONGES_ANNUELS', periode: 'JOURNEE_COMPLETE', commentaire: '' })
       const [s, d] = await Promise.all([api.getSoldes(employeeId), api.getDemandes(employeeId, annee, statutFilter === 'TOUS' ? undefined : statutFilter)])
@@ -206,6 +258,24 @@ export default function Conges() {
   const soldeByType = (type: string) => soldes.find((s) => s.type === type)
   const dureeLabel = (d: DemandeCongesDto) => (d.dureeJours === 0.5 ? '0.5 jour' : d.dureeJours === 1 ? '1 jour' : `${d.dureeJours} jours`)
   const canEdit = (d: DemandeCongesDto) => d.statut === 'EN_ATTENTE_MANAGER' || d.statut === 'SOUMMIS'
+  const pendingDemandes = demandesSuivi
+    .filter((d) => d.statut === 'SOUMMIS' || d.statut === 'EN_ATTENTE_MANAGER' || d.statut === 'EN_ATTENTE_RH')
+    .sort((a, b) => a.id - b.id)
+  const trackedDemande = pendingDemandes[0]
+  const trackedSuivi = trackedDemande?.suivi ?? []
+  const stepSoumission = trackedSuivi.find((s) => s.etape === 'SOUMISSION')
+  const stepManager = trackedSuivi.find((s) => s.etape === 'VALIDATION_MANAGER')
+  const stepRh = trackedSuivi.find((s) => s.etape === 'VALIDATION_RH')
+  const statusLabel = (status?: string): string => {
+    if (status === 'VALIDE') return 'Approuvée'
+    if (status === 'REFUSE') return 'Refusée'
+    return 'En attente'
+  }
+  const statusClass = (status?: string): string => {
+    if (status === 'VALIDE') return 'conges-step-status-valide'
+    if (status === 'REFUSE') return 'conges-step-status-refuse'
+    return 'conges-step-status-attente'
+  }
 
   if (loading && !soldes.length) {
     return (
@@ -396,8 +466,8 @@ export default function Conges() {
                 <label>Date de début</label>
                 <input
                   type="date"
-                  value={form.dateDebut}
-                  onChange={(e) => setForm({ ...form, dateDebut: e.target.value })}
+                  value={normalizeDateInput(form.dateDebut)}
+                  onChange={(e) => setForm({ ...form, dateDebut: normalizeDateInput(e.target.value) })}
                   required
                 />
               </div>
@@ -405,8 +475,8 @@ export default function Conges() {
                 <label>Date de fin</label>
                 <input
                   type="date"
-                  value={form.dateFin}
-                  onChange={(e) => setForm({ ...form, dateFin: e.target.value })}
+                  value={normalizeDateInput(form.dateFin)}
+                  onChange={(e) => setForm({ ...form, dateFin: normalizeDateInput(e.target.value) })}
                   required
                 />
               </div>
@@ -479,27 +549,41 @@ export default function Conges() {
 
         <aside className="conges-suivi-section">
           <h2 className="conges-suivi-title">Suivi de Validation</h2>
-          <p className="conges-suivi-subtitle">CIRCUIT DE VALIDATION TYPE</p>
-          <div className="conges-suivi-steps">
-            <div className="conges-step conges-step-done">
-              <div className="conges-step-dot" />
-              <span>Soumission</span>
-              <span className="conges-step-date">Aujourd&apos;hui</span>
-            </div>
-            <div className="conges-step conges-step-current">
-              <div className="conges-step-dot" />
-              <span>Validation Manager</span>
-              <span className="conges-step-date">En attente</span>
-            </div>
-            <div className="conges-step">
-              <div className="conges-step-dot conges-step-dot-dashed" />
-              <span>Validation RH</span>
-              <span className="conges-step-date">—</span>
-            </div>
-          </div>
+          <p className="conges-suivi-subtitle">DEMANDE EN COURS</p>
+          {trackedDemande ? (
+            <>
+              <p className="conges-form-desc">Demande #{trackedDemande.id} - {trackedDemande.motif}</p>
+              <div className="conges-suivi-steps">
+                <div className="conges-step conges-step-done">
+                  <div className="conges-step-dot" />
+                  <span>Soumission</span>
+                  <span className={`conges-step-status ${statusClass(stepSoumission?.statut)}`}>{statusLabel(stepSoumission?.statut)}</span>
+                  <span className="conges-step-date">{stepSoumission?.date || trackedDemande.dateSoumission}</span>
+                </div>
+                <div className={`conges-step ${stepManager?.statut === 'EN_ATTENTE' ? 'conges-step-current' : ''}`}>
+                  <div className={`conges-step-dot ${stepManager?.statut === 'EN_ATTENTE' ? '' : 'conges-step-dot-dashed'}`} />
+                  <span>Validation Manager</span>
+                  <span className={`conges-step-status ${statusClass(stepManager?.statut)}`}>{statusLabel(stepManager?.statut)}</span>
+                  <span className="conges-step-date">{stepManager?.date || '—'}</span>
+                </div>
+                <div className={`conges-step ${stepRh?.statut === 'EN_ATTENTE' ? 'conges-step-current' : ''}`}>
+                  <div className={`conges-step-dot ${stepRh?.statut === 'EN_ATTENTE' ? '' : 'conges-step-dot-dashed'}`} />
+                  <span>Validation RH</span>
+                  <span className={`conges-step-status ${statusClass(stepRh?.statut)}`}>{statusLabel(stepRh?.statut)}</span>
+                  <span className="conges-step-date">{stepRh?.date || '—'}</span>
+                </div>
+              </div>
+            </>
+          ) : (
+            <p className="conges-empty">Aucune demande en cours de traitement.</p>
+          )}
           <div className="conges-info-box">
             <Info size={18} />
-            <p>Toute demande doit être soumise au moins 15 jours à l&apos;avance pour les congés de plus de 3 jours. Pensez à informer votre équipe après validation.</p>
+            <p>
+              {trackedDemande
+                ? 'Le suivi affiche une seule demande active. Une fois validée ou refusée, la suivante apparaît automatiquement.'
+                : 'Soumettez une demande pour démarrer le circuit de validation dynamique.'}
+            </p>
           </div>
         </aside>
       </div>
@@ -550,7 +634,7 @@ export default function Conges() {
                     <button type="button" className="conges-link" onClick={() => setError('Affichage des détails indisponible pour le moment.')}>Détails</button>
                     {canEdit(d) && (
                       <>
-                        <button type="button" className="conges-link" onClick={() => { setEditingId(d.id); setForm({ dateDebut: d.dateDebut.replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$3-$2-$1'), dateFin: d.dateFin.replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$3-$2-$1'), motif: d.motifCode, periode: d.periode, commentaire: d.commentaire ?? '' }) }}>Modifier</button>
+                        <button type="button" className="conges-link" onClick={() => { setEditingId(d.id); setForm({ dateDebut: normalizeDateInput(d.dateDebut), dateFin: normalizeDateInput(d.dateFin), motif: d.motifCode, periode: d.periode, commentaire: d.commentaire ?? '' }) }}>Modifier</button>
                         <button type="button" className="conges-link conges-link-danger" onClick={() => handleAnnulerDemande(d.id)}>Annuler</button>
                       </>
                     )}

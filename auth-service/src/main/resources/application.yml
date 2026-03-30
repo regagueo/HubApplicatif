@@ -19,7 +19,7 @@ spring:
         registration:
           azure:
             client-id: c5b072b4-0af7-4b1d-9ee3-186e9a935930
-            client-secret: ${AZURE_CLIENT_SECRET}
+            client-secret: ${AZURE_CLIENT_SECRET:}
             authorization-grant-type: authorization_code
             redirect-uri: http://localhost:8081/login/oauth2/code/azure
             provider: azure

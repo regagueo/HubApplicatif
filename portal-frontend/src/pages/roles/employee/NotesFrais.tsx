@@ -74,7 +74,26 @@ export default function NotesFrais() {
   const [dossierFieldErrors, setDossierFieldErrors] = useState<Record<string, string>>({})
   const [draftFieldErrors, setDraftFieldErrors] = useState<Record<string, string>>({})
 
-  const employeeId = user?.id ?? 0
+  const employeeId = (() => {
+    const token = localStorage.getItem('portail_auth_token')
+    if (token) {
+      try {
+        const part = token.split('.')[1] || ''
+        // JWT = base64url (pas base64). Conversion nécessaire avant `atob`.
+        let base64 = part.replace(/-/g, '+').replace(/_/g, '/')
+        const padLen = base64.length % 4
+        if (padLen) base64 = base64 + '='.repeat(4 - padLen)
+        const payload = JSON.parse(atob(base64))
+        const raw = payload?.userId ?? payload?.id
+        const parsed = typeof raw === 'number' ? raw : Number(raw)
+        if (Number.isFinite(parsed) && parsed > 0) return parsed
+      } catch {
+        // Fallback sur le profil si le token est inexploitable.
+      }
+    }
+    if (typeof user?.id === 'number' && Number.isFinite(user.id) && user.id > 0) return user.id
+    return 0
+  })()
 
   const validateNoteFields = (note: CreateDemandeFraisRequest): Record<string, string> => {
     const errors: Record<string, string> = {}
